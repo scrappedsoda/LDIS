@@ -1,0 +1,76 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use std.textio.all; -- Imports the standard textio package.
+-----------------
+-- entity
+-----------------
+entity DSP is
+	port (
+		in_clk  : in std_logic;
+		in_size : in std_logic_vector((8-1) downto 0);
+		in_data : in std_logic_vector((16-1) downto 0);
+		out_avg  : out std_logic_vector((16-1) downto 0)
+	);
+end DSP;
+
+-----------------
+-- behaviour
+-----------------
+architecture behaviour of DSP is
+	type FIFO is array(0 to 1023) of std_logic_vector((16-1) downto 0);
+	shared variable FIFO_Data : FIFO := (others =>(others => '0'));
+
+	shared variable ptr : integer range 0 to 1023 := 0;
+	shared variable size: integer range 0 to 1023 := 0;
+begin
+
+DO: process(in_clk)
+variable t_mean : integer := 0;
+variable l : line;
+begin
+
+	t_mean := 0;
+
+	if rising_edge(in_clk) then
+		size := to_integer(unsigned(in_size));
+		if size=0 then
+			size:=1;
+		end if;
+
+		if ptr=size then
+			-- case ptr is equal to size
+			-- inserting the data in the right place
+			FIFO_Data(0 to 1022) := FIFO_Data(1 to 1023);
+			FIFO_Data(ptr) := in_data;
+			
+		elsif ptr < size then 
+			-- is the pointer smaller than the size we dont do the 
+			-- shifting
+			FIFO_Data(ptr) := in_data;
+			ptr := ptr +1;
+		elsif ptr > size then 
+			-- if the pointer is bigger than the size we shift
+			-- everything back instead
+			FIFO_Data(0 to size) := FIFO_Data(ptr-size to ptr);
+		end if; -- ptr 
+
+		-- calculating the floating mean
+		for i in 0 to size loop
+			t_mean := t_mean+to_integer(unsigned(FIFO_Data(i)));
+			write(l, String'("the vals which get added up: " & integer'image(t_mean)));
+			writeline(output, l);
+		end loop;
+		t_mean := t_mean/size;
+		write(l, String'("Mean after division:" & integer'image(t_mean)));
+		writeline(output, l);
+
+		out_avg <= std_logic_vector(to_unsigned(t_mean ,out_avg'length));
+	end if; -- clk
+end process DO;
+
+
+
+end behaviour;
+
+
