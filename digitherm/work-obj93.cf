@@ -1,0 +1,16 @@
+v 4
+file . "7seg.vhd" "e7892139b247edd0aff82891b347089afbee85ae" "20190402061318.404":
+  entity sevenseg at 8( 284) + 0 on 27;
+  architecture behavioral of sevenseg at 47( 1414) + 0 on 28;
+file . "DSP.vhd" "520fcb9f74568bc58d1019d6db3080d30778061b" "20190402061318.397":
+  entity dsp at 1( 0) + 0 on 25;
+  architecture behaviour of dsp at 31( 618) + 0 on 26;
+file . "ADT7420.vhd" "599681f4ae83fa72eeba6825eef75dfbc9020b11" "20190402061318.391":
+  entity adt7420 at 1( 0) + 0 on 23;
+  architecture behaviour of adt7420 at 39( 831) + 0 on 24;
+file . "i2c_master.vhd" "6098df68914072ed0d9f64890fc46351ea12a293" "20190402061318.384":
+  entity i2c_master at 33( 1676) + 0 on 21;
+  architecture logic of i2c_master at 56( 2906) + 0 on 22;
+file . "digitherm.vhd" "45ce82084cb1eb4f7fcc6cbfe3823c2a38294dd4" "20190331135702.705":
+  entity digitherm at 1( 0) + 0 on 19;
+  architecture behaviour of digitherm at 31( 820) + 0 on 20;

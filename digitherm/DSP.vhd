@@ -7,10 +7,20 @@ use std.textio.all; -- Imports the standard textio package.
 -----------------
 entity DSP is
 	port (
+		-- everywhere
 		in_clk  : in std_logic;
+		in_rst  : in std_logic;
+
+		-- from the ADT
 		in_drdy : in std_logic;
+		in_err  : in std_logic;
 		in_size : in std_logic_vector((8-1) downto 0);
+
+		-- from somewhere else
 		in_data : in std_logic_vector((16-1) downto 0);
+
+		-- the output
+		out_vld : out std_logic;
 		out_avg : out std_logic_vector((16-1) downto 0)
 	);
 end DSP;
