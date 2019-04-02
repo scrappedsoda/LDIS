@@ -1,0 +1,12 @@
+v 4
+file . "ADT7420-Sampler.vhdl" "9df07aa73c2b7d4378496365a5058eec3cc9de55" "20190328102858.002":
+  entity adt7420 at 1( 0) + 0 on 57;
+  architecture behaviour of adt7420 at 35( 731) + 0 on 58;
+file . "TWICtl.vhd" "b6e23b460a69e779f0d991b9ebc6e1f8e5c3002e" "20190328102857.977":
+  package twiutils at 23( 823) + 0 on 53;
+  package body twiutils at 28( 959) + 0 on 54;
+  entity twictl at 59( 2225) + 0 on 55;
+  architecture behavioral of twictl at 133( 5831) + 0 on 56;
+file . "ADT-tb.vhdl" "d728fda4e31ee912af3ec2a0134394567231e774" "20190328103332.347":
+  entity adt_tb at 8( 187) + 0 on 63;
+  architecture behav of adt_tb at 18( 373) + 0 on 64;

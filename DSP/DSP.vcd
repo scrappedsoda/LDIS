@@ -1,0 +1,19 @@
+$date
+  Sat Mar 23 22:48:52 2019
+$end
+$version
+  GHDL v0
+$end
+$timescale
+  1 fs
+$end
+$var reg 1 ! in_clk $end
+$var reg 8 " in_size[7:0] $end
+$var reg 16 # in_data[15:0] $end
+$var reg 16 $ out_avg[15:0] $end
+$enddefinitions $end
+#0
+U!
+bUUUUUUUU "
+bUUUUUUUUUUUUUUUU #
+bUUUUUUUUUUUUUUUU $
