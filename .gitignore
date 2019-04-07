@@ -1,0 +1,13 @@
+*.log
+*.jou
+# *.sh
+*.bak
+*.cf
+*.os
+*.html
+*.xml
+*.xpr
+*.bit
+digitherm.cache
+digitherm.hw
+digitherm.ip_user_files 
