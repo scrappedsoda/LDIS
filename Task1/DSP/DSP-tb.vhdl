@@ -32,10 +32,8 @@ architecture behav of DSP_tb is
 		in_size : in std_logic_vector((3-1) downto 0);
 		out_vld : out std_logic;
 		out_avg : out std_logic_vector((16-1) downto 0);
-		in_dbg_sw3 : in std_logic;
-		dbg_ld2  : out std_logic;
-		dbg_size : out std_logic_vector(7 downto 0);
-		dbg_ptr : out std_logic_vector(5 downto 0)
+		out_size_check	: out std_logic_vector(2 downto 0);
+		out_size: out std_logic_vector(7 downto 0)
 		);
 	end component;
 
@@ -50,9 +48,8 @@ architecture behav of DSP_tb is
 	signal err   : std_logic := '0';
 	signal vld   : std_logic;
 	signal clk : std_logic := '0';
-	signal dbg_ld2 : std_logic;
-	signal dbg_size : std_logic_vector(7 downto 0);
-	signal dbg_ptr :  std_logic_vector(5 downto 0);
+	signal out_size_check : std_logic_vector(2 downto 0);
+	signal out_size :  std_logic_vector(7 downto 0);
 
 
 	signal Finish : std_logic := '0';
@@ -70,10 +67,8 @@ begin
 		in_err  => err,
 		out_vld => vld,
 		out_avg => avg,
-		in_dbg_sw3 => '0',
-		dbg_ld2 => dbg_ld2,
-		dbg_size => dbg_size,	
-    	dbg_ptr => dbg_ptr
+		out_size_check => out_size_check,	
+    	out_size => out_size
 	);
 
 ----------------------
@@ -88,28 +83,67 @@ begin
 	wait for Tperiod/2;
 	wait for Tperiod*2;
 	put_data(x"0F30", idata, size, drdy);
-
 	put_data(x"0F33", idata, size, drdy);
-	wait for 2*Tperiod;
 	put_data(x"0F32", idata, size, drdy);
 	put_data(x"0F31", idata, size, drdy);
-	wait for 5*Tperiod;
 	put_data(x"0F34", idata, size, drdy);
 	put_data(x"0F30", idata, size, drdy);
 	put_data(x"0F31", idata, size, drdy);
 	put_data(x"0F30", idata, size, drdy);
 
-	put_data(x"7E20", idata, size, drdy);
-	put_data(x"7E10", idata, size, drdy);
-	put_data(x"7F30", idata, size, drdy);
-	put_data(x"7F32", idata, size, drdy);
-	put_data(x"7F31", idata, size, drdy);
-	put_data(x"7F39", idata, size, drdy);
-	put_data(x"7F37", idata, size, drdy);
-	put_data(x"7F40", idata, size, drdy);
-	put_data(x"7F39", idata, size, drdy);
-	put_data(x"7F80", idata, size, drdy);
-	size <= "100";
+	size <= "011";
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F33", idata, size, drdy);
+	put_data(x"0F32", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+
+	size <= "100"; -- size = 16
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F33", idata, size, drdy);
+	put_data(x"0F32", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F33", idata, size, drdy);
+	put_data(x"0F32", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+	put_data(x"0F32", idata, size, drdy);
+	put_data(x"0F31", idata, size, drdy);
+	put_data(x"0F34", idata, size, drdy);
+	put_data(x"0F30", idata, size, drdy);
+
+	size <= "111"; -- max size
+	for I in 0 to 130 loop
+		put_data(x"0F30", idata, size, drdy);
+	end loop;
+
+	size <= "010";
+	put_data(x"8E20", idata, size, drdy);
+	put_data(x"8E10", idata, size, drdy);
+	put_data(x"8F30", idata, size, drdy);
+	put_data(x"8F32", idata, size, drdy);
+	put_data(x"8F31", idata, size, drdy);
+	put_data(x"8F39", idata, size, drdy);
+	put_data(x"8F37", idata, size, drdy);
+	put_data(x"8F40", idata, size, drdy);
+	put_data(x"8F39", idata, size, drdy);
+	put_data(x"8F80", idata, size, drdy);
 	put_data(x"0F30", idata, size, drdy);
 	put_data(x"0F33", idata, size, drdy);
 	put_data(x"0F32", idata, size, drdy);

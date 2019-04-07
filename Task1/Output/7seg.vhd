@@ -1,17 +1,16 @@
 -------------------------------------------------------------------------------
---
--- 7-segment display
--- Source: http://vhdlguru.blogspot.co.at/2010/03/vhdl-code-for-bcd-to-7-segment-display.html
---
+-- BCD-segment display
+-- Author: Glinserer Andreas
+-- MatrNr: 1525864
 -------------------------------------------------------------------------------
---
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
---
--- use std.textio.all; -- Imports the standard textio package.
--------------------------------------------------------------------------------
---
+
+--------------------------------------------------------------------------------
+-- entity
+--------------------------------------------------------------------------------
 entity sevenseg is
 
 	generic (
@@ -38,9 +37,10 @@ entity sevenseg is
 	);
 
 end sevenseg;
---
--------------------------------------------------------------------------------
---
+
+--------------------------------------------------------------------------------
+-- behavioral
+--------------------------------------------------------------------------------
 architecture behavioral of sevenseg is
 	-- to get a refresh rate of 100 hz for every bcd i divide clockfreq by 800
 	-- the cntmax is full after 1.25ms (1/800hz)
@@ -49,7 +49,7 @@ architecture behavioral of sevenseg is
 	type T_DATA is array (0 to 10) of std_logic_vector((7-1) downto 0);
 
 	type codout is array (0 to 7) of std_logic_vector((4-1) downto 0);
-	signal cout : codout := (others => (others => '0'));
+	shared variable cout : codout := (others => (others => '0'));
 
 	shared variable ptr : natural range 0 to 7 := 0;
 
@@ -68,6 +68,9 @@ architecture behavioral of sevenseg is
 								);
 begin
 
+--------------------------------------------------------------------------------
+-- parser process which double dabbles
+--------------------------------------------------------------------------------
 	parser: process (in_clk)
 		variable whole_bin : std_logic_vector((8-1) downto 0);	-- whole binary value
 		variable whole_tar : std_logic_vector((12-1) downto 0);	-- the target vector
@@ -80,11 +83,6 @@ begin
 		variable frac_bin  : std_logic_vector((16-1) downto 0); -- fractional binary
 		variable frac_tar  : std_logic_vector((16-1) downto 0); -- fract target vect
 
-		-- the decoded output
---		variable cout : codout := (others => (others => '0'));
-		-- to debug
---		variable l : line;
-
 	begin
 
 		whole_bin := (others => '0');
@@ -93,32 +91,30 @@ begin
 		frac_tar  := (others => '0');
 
 		if rising_edge(in_clk) then
-
 			if in_rst='0' then
-				cout(0) <= "0000"; 	
-				cout(1) <= "0000"; 
-				cout(2) <= "0000";
-				cout(3) <= "0000";
-				cout(4) <= "0000";
-				cout(5) <= "0000";
-				cout(6) <= "0000";
-				cout(7) <= "0000";
+				cout(0) := "0000"; 	
+				cout(1) := "0000"; 
+				cout(2) := "0000";
+				cout(3) := "0000";
+				cout(4) := "0000";
+				cout(5) := "0000";
+				cout(6) := "0000";
+				cout(7) := "0000";
 			elsif in_vld='1' then
 	
 		
 				if in_tmp(15) = '0' then
 	
 					whole_bin := in_tmp(14 downto 7);
-					frac_bin(6 downto 0)  := in_tmp(6 downto 0);
+					frac_bin(6 downto 0) := in_tmp(6 downto 0);
 				else
 					-- basically i need to transform the negative number according to the 
 					-- rules of two-complement. Thats why i need to add +1 to the part after
 					-- the comma but not to the part before the comma
-					whole_bin := not in_tmp(14 downto 7); --std_logic_vector(unsigned(not whole_bin));
-					frac_bin(6 downto 0)  := std_logic_vector(unsigned(not in_tmp(6 downto 0))+1);
+					whole_bin := not in_tmp(14 downto 7); 
+					frac_bin(6 downto 0) := std_logic_vector(unsigned(not in_tmp(6 downto 0))+1);
 				end if;
 
-				-- 0x0f30 => 0000 1111 0011 0000
 	
 				-- calculating the part before the comma using double dabble
 				for I in 0 to whole_bin'length-1 loop 
@@ -166,23 +162,21 @@ begin
 				end loop;
 	
 	
-				-- TODO add ifs for the left side to truncate leading zeros and give them a '-' if negative instead
-				-- the outputs i have now are wrong .. they are good for debugging but i need vector(7 downto 0) for
 				-- the real bcd -> map this with a const arr and indices from the calculated values
 	
 				if in_tmp(15) = '1' then
-					cout(0) <= "1010";
+					cout(0) := "1010";
 				else
-					cout(0) <= "0000";
+					cout(0) := "0000";
 				end if;
 	
-				cout(1) <= whole_tar(11 downto 8);
-				cout(2) <= whole_tar(7 downto 4);
-				cout(3) <= whole_tar(3 downto 0);
-				cout(4) <= frac_tar(15 downto 12);
-				cout(5) <= frac_tar(11 downto 8);
-				cout(6) <= frac_tar(7 downto 4);
-				cout(7) <= frac_tar(3 downto 0);
+				cout(1) := whole_tar(11 downto 8);
+				cout(2) := whole_tar(7 downto 4);
+				cout(3) := whole_tar(3 downto 0);
+				cout(4) := frac_tar(15 downto 12);
+				cout(5) := frac_tar(11 downto 8);
+				cout(6) := frac_tar(7 downto 4);
+				cout(7) := frac_tar(3 downto 0);
 	
 				
 --				dbg_seg0 <= "0000"&cout(0); --VALUES(to_integer(unsigned(cout(0)))) & '1';
@@ -196,43 +190,40 @@ begin
 	
 			end if;
 		end if;
-
---		write(l, String'("test2"));
---		writeline(output,l);
 	end process parser;
 
-	-- this process does counting and outputting
+--------------------------------------------------------------------------------
+-- output process which does multiplexing of the bcd
+--------------------------------------------------------------------------------
 	Outing : process (in_clk)
+		-- the variable which counts
 		variable counter : natural range 0 to cntmax := 0;
-
---		variable l : line;
 	begin
 
 		if rising_edge(in_clk) then
 			counter := counter + 1;
-		end if;
 
-		if counter = cntmax then
-			counter := 0;	
-			if ptr = 3 then
-				out_seg <= VALUES(to_integer(unsigned(cout(ptr)))) & '0'; -- the one with the comma
---				out_seg <= VALUES(ptr) & '0'; -- the one with the comma
-			else
-				out_seg <= VALUES(to_integer(unsigned(cout(ptr)))) & '1'; -- the one with the comma
---				out_seg <= VALUES(ptr) & '1'; -- the one with the comma
-			end if;
-			out_an <= (others => '1');
-			out_an(ptr) <= '0';
+			if counter >= cntmax then
+				counter := 0;	-- reset the counter	
 
---			out_an <= (ptr => '0', others =>'1');
+				if ptr = 3 then -- the special segment with the comma point
+					out_seg <= VALUES(to_integer(unsigned(cout(ptr)))) & '0'; 
+				else
+					out_seg <= VALUES(to_integer(unsigned(cout(ptr)))) & '1';
+				end if;		-- ptr = 3
 
-			-- ptr wird erhöht for next segment
-			if ptr = 7 then
-				ptr := 0;
-			else
-				ptr := ptr +1;
-			end if;
-		end if;
+				-- set every anode to 1 and set the one with the pointer to 0
+				out_an <= (others => '1');
+				out_an(ptr) <= '0';
+
+				-- ptr wird erhöht for next segment or reset
+				if ptr = 7 then
+					ptr := 0;
+				else
+					ptr := ptr +1;
+				end if;		-- ptr = 7
+			end if; 		-- counter>cntmax
+		end if;				-- clk
 
 	end process Outing;
 end behavioral;
