@@ -25,10 +25,8 @@ entity DSP is
 		-- the output
 		out_vld : out std_logic;
 		out_avg : out std_logic_vector((16-1) downto 0);
-		in_dbg_sw3 : in std_logic;
-		dbg_ld2  : out std_logic;
-		dbg_size : out std_logic_vector(7 downto 0);
-		dbg_ptr: out std_logic_vector(5 downto 0)
+		out_size_check	: out std_logic_vector(2 downto 0);
+		out_size: out std_logic_vector(7 downto 0)
 	);
 end DSP;
 
@@ -49,13 +47,15 @@ begin
 STM : process (in_clk)
 variable FIFO_Data : FIFO := (others =>(others => '0'));
 variable step : integer := 0;
-variable t_mean : integer := 0;
+--variable t_mean : integer := 0;
+variable t_mean : signed(15+2**3-1 downto 0);
 variable size: integer range 0 to 2**3-1:= 0;
 
 begin
 
 if rising_edge(in_clk) then
-	dbg_size <= std_logic_vector(to_unsigned(size,8));
+	out_size_check <= std_logic_vector(to_unsigned(size,out_size_check'length));
+	out_size <= std_logic_vector(to_unsigned(2**size,out_size'length));
 
 	if in_rst='0' then -- the reset is valid
 
@@ -79,7 +79,8 @@ if rising_edge(in_clk) then
 					if in_drdy /='1' then
 						state <= st_read;
 					end if;
-					t_mean := 0;
+--					t_mean := 0;
+					t_mean := (others => '0');
 					out_vld <= '1';
 	
 				when st_read =>
@@ -92,18 +93,20 @@ if rising_edge(in_clk) then
 					end if;
 	
 				when st_add =>
-					t_mean := t_mean + to_integer(unsigned(FIFO_Data(step)));
+--					t_mean := t_mean + to_integer(unsigned(FIFO_Data(step)));
+					t_mean := t_mean + signed(FIFO_Data(step));
 
 					if step >= 2**(size)-1 then -- only add until size
 						state <= st_div;
 					end if;
 					step := step+1;
-					dbg_ptr <= std_logic_vector(to_unsigned(step,6));
 	
 				when st_div =>
 					out_vld <= '1';		-- data is now valid
 					-- divison by shifting
-					out_avg <= std_logic_vector(shift_right(to_unsigned(t_mean, out_avg'length),size));
+--					out_avg <= std_logic_vector(shift_right(to_unsigned(t_mean, out_avg'length),size));
+--					out_avg <= std_logic_vector(shift_right(t_mean,size));
+					out_avg <= std_logic_vector(t_mean(15+size downto size));
 					step := 0;			-- reset step for the next addition
 					state <= st_idle;	-- go to idle state
 			end case;

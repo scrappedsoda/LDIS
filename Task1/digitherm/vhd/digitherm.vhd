@@ -24,13 +24,9 @@ entity digitherm is
 		in_size   : in std_logic_vector((3-1) downto 0);
 		out_seg		: out std_logic_vector((8-1) downto 0);
 		out_an		: out std_logic_vector((8-1) downto 0);
-		in_dbg_sw1 : in std_logic;
-		in_dbg_sw2 : in std_logic;
-		in_dbg_sw3 : in std_logic;
 		out_led_adt : out std_logic;
-		dbg_ld_dsp2 : out std_logic;
-		dbg_size	: out std_logic_vector(7 downto 0);
-		dbg_ptr 	: out std_logic_vector(5 downto 0)
+		out_size_check	: out std_logic_vector(2 downto 0);
+		out_size: out std_logic_vector(7 downto 0)
 	);
 end digitherm;
 
@@ -70,10 +66,8 @@ architecture behaviour of digitherm is
 		in_data : in std_logic_vector((16-1) downto 0);
 		out_vld : out std_logic;
 		out_avg : out std_logic_vector((16-1) downto 0);
-		in_dbg_sw3 : in std_logic;
-		dbg_size: out std_logic_vector(7 downto 0);
-		dbg_ld2 : out std_logic;
-		dbg_ptr : out std_logic_vector(5 downto 0)
+		out_size_check	: out std_logic_vector(2 downto 0);
+		out_size: out std_logic_vector(7 downto 0)
 		);
 	end component; -- DSP
 
@@ -137,10 +131,8 @@ begin
 		in_data => ADT_to_DSP_tmp,
 		out_vld => DSP_to_BCD_vld,
 		out_avg	=> DSP_to_BCD_tmp,
-		in_dbg_sw3 => in_dbg_sw3,
-		dbg_ld2 => dbg_ld_dsp2,
-		dbg_size => dbg_size,
-		dbg_ptr => dbg_ptr
+		out_size_check => out_size_check,
+		out_size => out_size 
 	);
 	
 	BCD_0 : sevenseg generic map
