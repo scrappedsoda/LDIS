@@ -11,4 +11,5 @@
 digitherm.cache
 digitherm.hw
 digitherm.ip_user_files 
-.Xil
+.*	# ignore everything starting with a dot
+!/.gitignore	# except gitignore
