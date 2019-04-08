@@ -97,3 +97,9 @@ set_property -dict { PACKAGE_PIN C15   IOSTANDARD LVCMOS33 } [get_ports { inout_
 #set_property -dict { PACKAGE_PIN D13   IOSTANDARD LVCMOS33 } [get_ports { TMP_INT }]; #IO_L6N_T0_VREF_15 Sch=tmp_int
 #set_property -dict { PACKAGE_PIN B14   IOSTANDARD LVCMOS33 } [get_ports { TMP_CT }]; #IO_L2N_T0_AD8N_15 Sch=tmp_ct
 
+set_input_delay -clock sys_clk_pin 0.500 [get_ports {{in_size[*]} {in_rst}}];
+#{A[0]} {A[1]} {A[2]} {A[3]} {A[4]} {A[5]} {A[6]} {A[7]} {B[0]} {B[1]} {B[2]} {B[3]} {B[4]} {B[5]} {B[6]} {B[7]} BTN_D BTN_U}]
+set_output_delay -clock sys_clk_pin 5.000 [get_ports {{out_an[*]} {out_seg[*]} {out_size[*]} {out_size_check[*]} {out_led_adt}}];
+#set_output_delay -clock sys_clk_pin 5.000 [get_ports {{LED[0]} {LED[1]} {LED[2]} {LED[3]} {LED[4]} {LED[5]} {LED[6]} {LED[7]} {LED[8]} {LED[9]} }]
+set_input_delay -clock sys_clk_pin 0.500 [get_ports {{inout_scl} {inout_sda}}];
+set_output_delay -clock sys_clk_pin 5.000 [get_ports {{inout_scl} {inout_sda}}];
