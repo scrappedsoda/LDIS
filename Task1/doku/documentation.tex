@@ -185,13 +185,41 @@ This is solved in two processes. The first process takes the data in if the vali
 DSP part it calculates the double dabble with for loops instead of a state machine. It then saves its
 solutions to variables. The second process takes these solutions, converts it to an integer format and
 uses these as indices for a predefined map of outputs. Furthermore the second process does this about
-800 times per second to get a refresh rate of 100Hz per BCD. This is done with a simple counter signal.
+800 times per second to get a refresh rate of $100~Hz$ per BCD. This is done with a simple counter signal.
 
+
+\section{Verification}
+There is no testbench for the whole design. I tested 2 out of the 3 parts separatly and made the final test
+on the board. The design which was not tested is the I2C controller which I took from the demo program.
+The tested parts are the DSP and the Output.
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=16cm]{fig/DSPtb}
+	\caption{Screenshot of the DSP testbench. Source: gtkwave}
+%	\label{fig:block}
+\end{figure}
+
+In the testbench for the Output you can see nicely the multiplexing. Furthermore for the Output
+testbench the clock period for the Output unit in the testbench is instantiated with a clock frequency of
+$50~kHz$ to reduce the simulation time.
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=16cm]{fig/OUTtb}
+	\caption{Screenshot of the output testbench. Source: gtkwave}
+%	\label{fig:block}
+\end{figure}
+
+I also tried to use a testbench for the i2c part (thanks to Raphael Hauk), but the simulation time for this was off the charts,
+because of the clock division into $400~kHz$.
 
 \section{Reports}
 
 \subsection{Timing}
-After the first implementation
+There are no violations of the timing constraints. I chose 0.5 for the input delay and 5 for the output delay.
+The set_output_delay represents the time after which the data must be valid before the next rising edge.
+ The set_input_delay defines the time which the data must be valid before the rising_edge.
+input_delay represents 
 \lstinputlisting[basicstyle=\tiny,firstnumber=1]{report-timing.txt}
 
 \subsection{Utilization}
