@@ -78,15 +78,6 @@ begin
 	in_tmp   => in_tmp,
 	out_seg	 => dbg_seg,
 	out_an   => dbg_an
-
---dbg_seg0 => dbg_seg0, 
---dbg_seg1 => dbg_seg1,
---dbg_seg2 => dbg_seg2,
---dbg_seg3 => dbg_seg3,
---dbg_seg4 => dbg_seg4,
---dbg_seg5 => dbg_seg5,
---dbg_seg6 => dbg_seg6,
---dbg_seg7 => dbg_seg7
 );
 
 --
@@ -97,24 +88,23 @@ STIMULI: process
 begin
 	wait for Tperiod;
 	in_vld <= '1';
-	-- F30 = 1111 0011 0000 = 1111 0
-	in_tmp <= x"0F30";
+	in_tmp <= x"0F30";	-- 0030.3750
 	wait for 10 us;
-	in_tmp <= x"7FFF";
+	in_tmp <= x"7FFF";  -- 0255.9921
 	wait for 10 us;
-	in_tmp <= x"0000";
+	in_tmp <= x"0000";  -- 0000.0000
 	wait for 10 us;
-	in_tmp <= x"36A9";
+	in_tmp <= x"36A9";  -- 0109.3203
 	wait for 10 us;
-	in_tmp <= x"8000";
+	in_tmp <= x"8000";  -- -256.0000
 	wait for 10 us;
-	in_tmp <= x"FFFF";
+	in_tmp <= x"FFFF";  -- -000.0078
 	wait for 10 us;
-	in_tmp <= x"A409";
+	in_tmp <= x"A409";  -- -183.9296
 	wait for 10 us;
-	in_tmp <= x"C004";
+	in_tmp <= x"C004";  -- -127.9687
 	wait for 10 us;
-	in_tmp <= x"0F30";
+	in_tmp <= x"0F30";  -- 0030.3750
 	wait for 10 us;
 	Finish <= '1';
 	wait;

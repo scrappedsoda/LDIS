@@ -1,5 +1,5 @@
 $date
-  Tue Apr  2 16:26:20 2019
+  Mon Apr  8 13:50:34 2019
 $end
 $version
   GHDL v0
@@ -21,7 +21,6 @@ $var reg 1 * in_vld $end
 $var reg 16 + in_tmp[15:0] $end
 $var reg 8 , out_seg[7:0] $end
 $var reg 8 - out_an[7:0] $end
-$comment cout is not handled $end
 $upscope $end
 $enddefinitions $end
 #0
