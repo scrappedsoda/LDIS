@@ -1,0 +1,434 @@
+%----------------------------------------------------------------------------
+%
+%	This template was created by
+%		Christian Krieg <christian.krieg@alumni.tuwien.ac.at>
+%
+%	April 2018
+%
+%----------------------------------------------------------------------------
+%
+\documentclass[%
+	a4paper,
+]
+{article}
+%
+%----------------------------------------------------------------------------
+%
+% Institution
+%
+%\institution{Institute of Computer Technology}
+%
+%----------------------------------------------------------------------------
+%
+% Use the 'Libertine' font type
+%
+%\usepackage{libertine}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+%
+%----------------------------------------------------------------------------
+%
+% Set page margins
+%
+\usepackage{geometry}
+\geometry{%
+	left   = 2cm,
+	right  = 2cm,
+	top    = 2cm,
+	bottom = 2cm
+}
+%
+%----------------------------------------------------------------------------
+%
+% Set line spacing
+%
+\usepackage{setspace}
+\setstretch{1}
+%
+%----------------------------------------------------------------------------
+%
+% Settings for hyperlinks
+%
+\usepackage{hyperref}
+\hypersetup{%
+	colorlinks = true,
+	allcolors  = blue,
+}
+%
+%----------------------------------------------------------------------------
+%
+% Use colors
+%
+\usepackage{xcolor}
+\usepackage{colortbl}
+%
+%----------------------------------------------------------------------------
+%
+% Define a TODO and a DONE command
+%
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+\newcommand{\done}[1]{}
+%
+%----------------------------------------------------------------------------
+%
+% Use glossaries
+%
+\usepackage{glossaries}
+\makeglossaries
+%
+% Glossary entries
+%
+\newglossaryentry{fpga}{
+	name = {FPGA},
+	description = {Field-programmable gate array},
+	text = {FPGA},
+	first = {field-programmable gate array (FPGA)},
+	plural = {FPGAs},
+	firstplural = {field-programmable gate arrays (FPGAs)},
+}
+%
+\newglossaryentry{trng}{
+	name = {TRNG},
+	description = {True-random number generator},
+	text = {TRNG},
+	first = {true-random number generator (TRNG)},
+	plural = {TRNGs},
+	firstplural = {true-random number generators (TRNGs)},
+}
+%
+\newglossaryentry{bcd}{
+  name={BCD},
+  description={Binary-coded decimal},
+  text={BCD},
+  first={binary-coded decimal (BCD)},
+}
+%
+\newglossaryentry{hdl}{
+  name={HDL},
+  description={Hardware description language},
+  text={HDL},
+  first={hardware description language (HDL)},
+  plural={HDLs},
+  firstplural={hardware description languages (HDLs)},
+}
+%
+\newglossaryentry{ip}{
+  name={IP},
+  description={Intellectual property},
+  text={IP},
+  first={intellectual property (IP)},
+}
+%
+\newglossaryentry{3pip}{
+  name={3PIP},
+  description={Third-party intellectual property},
+  text={3PIP},
+  first={third-party intellectual property (3PIP)},
+}
+%
+\newglossaryentry{dsp}{
+  name={DSP},
+  description={Digital signal processor},
+  text={DSP},
+  first={digital signal processor (DSP)},
+  plural={DSPs},
+  firstplural={digital signal processors (DSPs)},
+}
+%
+%\newglossaryentry{}{
+%  name={},
+%  description={},
+%  text={},
+%  first={},
+%  plural={},
+%  firstplural={},
+%}
+%
+%----------------------------------------------------------------------------
+%
+% Settings for citations and the bibliography
+%
+\usepackage[%
+	backend     = biber,
+	maxbibnames = 99,
+	autocite    = footnote,
+	citestyle   = verbose-ibid,
+	firstinits=true,
+]{biblatex}
+\bibliography{bib/report}
+%
+%----------------------------------------------------------------------------
+%
+%	TikZ -- TikZ ist kein Zeichenprogramm
+%
+\usepackage{tikz}
+\usepackage{tikz-timing}
+\usepackage{etoolbox}
+\usetikzlibrary{mindmap}
+\usetikzlibrary{shapes}
+\usetikzlibrary{arrows}
+\usetikzlibrary{decorations}
+\usetikzlibrary{shapes.symbols}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{shapes.multipart}
+\usetikzlibrary{positioning}
+\usetikzlibrary{patterns}
+\usetikzlibrary{calc}
+\usetikzlibrary{scopes}         % cf. pgfmanual p.66
+\usetikzlibrary{chains}         % cf. pgfmanual p.284
+\usetikzlibrary{fit}
+\usetikzlibrary{matrix}
+\usetikzlibrary{decorations}
+\usetikzlibrary{circuits.logic}
+\usetikzlibrary{circuits.logic.IEC}
+\usetikzlibrary{shapes.gates.logic.IEC}
+\usetikzlibrary{circuits.logic.US}
+\usetikzlibrary{shapes.gates.logic.US}
+\usetikzlibrary{circuits.ee}
+\usetikzlibrary{circuits.ee.IEC}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{automata}
+\usetikzlibrary{intersections}
+\usetikzlibrary{plotmarks}
+\usepgflibrary{fpu}
+\usetikzlibrary{decorations.pathreplacing}
+%
+%----------------------------------------------------------------------------
+%
+% TikZ shapes
+%  
+	\input{lib/tikz/dff}
+%
+%----------------------------------------------------------------------------
+%
+% Use AMS math fonts
+%
+\usepackage{amsfonts}
+\usepackage[sans]{dsfont}
+%
+%----------------------------------------------------------------------------
+%
+% Use multiple figures in one float
+%
+\usepackage{subcaption}
+%
+%----------------------------------------------------------------------------
+%
+% Use dummy text
+%
+\usepackage{lipsum}
+%
+%----------------------------------------------------------------------------
+%
+% Use extended list environments (e.g., 'inparaenum')
+%
+\usepackage{paralist}
+%
+%----------------------------------------------------------------------------
+%
+% Use listings
+%
+\usepackage{listings}
+
+\lstdefinestyle{vhdl}
+{
+	language=VHDL,
+  basicstyle=\linespread{1}\scriptsize\ttfamily\color{black},
+  commentstyle=\scriptsize\itshape,
+  escapeinside={(*@}{@*)},
+  frame=single, numbers=left,
+%  numbersep=5pt,
+  xleftmargin=15pt,
+  xrightmargin=5pt,
+  numbersep=5pt,
+  breaklines=true,
+  moredelim=**[is][\ttfamily\bfseries\color{red}]{(*}{*)},
+}
+
+\lstdefinestyle{verilog}
+{
+	language=Verilog,
+  basicstyle=\linespread{1}\scriptsize\ttfamily\color{black},
+  commentstyle=\scriptsize\itshape,
+  escapeinside={(*@}{@*)},
+  frame=single, numbers=left,
+%  numbersep=5pt,
+  xleftmargin=15pt,
+  xrightmargin=5pt,
+  numbersep=5pt,
+  breaklines=true,
+  moredelim=**[is][\ttfamily\bfseries\color{red}]{(*}{*)},
+}
+%
+%----------------------------------------------------------------------------
+%
+% Typeset pseudo code
+%
+\usepackage{syntax}
+%
+%----------------------------------------------------------------------------
+%
+% More options for boxes
+%
+\usepackage{realboxes}
+%
+% Command for vertical text in tabulars
+%
+\newcommand*\rot{\rotatebox{90}}
+%
+%----------------------------------------------------------------------------
+%
+% Use \textsubscript
+%
+\usepackage{fixltx2e}
+%
+%----------------------------------------------------------------------------
+%
+% More options for tabulars
+%
+\usepackage{array}
+%
+%----------------------------------------------------------------------------
+%
+% Use appendices
+%
+\usepackage[titletoc]{appendix}
+%
+%----------------------------------------------------------------------------
+%
+% Use the cleverref package -- Load this package as the very last!
+%
+\usepackage{cleveref}
+%
+%----------------------------------------------------------------------------
+%
+% Document body
+%
+\begin{document}
+%
+%----------------------------------------------------------------------------
+%
+\begin{titlepage}
+
+	\begin{tikzpicture}[thick]
+		\node (points) at (0,0) [draw,minimum size=2cm] {};
+		\node (lbl-points) at (points.south) [anchor=south,font=\tiny] {Points};
+		\node (grade) at (points.east) [draw,minimum size=2cm,anchor=west,
+			outer sep=0] {};
+		\node (lbl-grade) at (grade.south) [anchor=south,font=\tiny] {Grade};
+	\end{tikzpicture}
+
+	\begin{flushright}
+
+		% Update this with your team number
+		\huge\bfseries
+		Team: - \\[1em]
+
+		% Update this with your matriculation number, first name, second name
+		\large
+		1525864 Andreas Glinserer	\\
+	
+	\end{flushright}
+
+	\vspace{5em}
+
+	\begin{center}
+		{\huge Digital Integrated Circuits Lab (LDIS)}\\[1em]
+		{\Large 384.088, Summer Term 2019} \\[2em]
+		{\large Supervisors:\\[.5em]
+			Christian Krieg, David Radakovits, Axel Jantsch} \\[10em]
+
+		{\Huge Task 1: Digital Thermometer}\\[10em]
+	\end{center}
+
+
+%	\begin{abstract}
+%
+%		Enter the abstract of your report here. An abstract summarizes your
+%		entire work (i.e., problem statement, motivation, methodology, key
+%		findings). It is a good strategy to write a first version of the abstract
+%		when you start to work on your report. This gives you a good guideline
+%		what to	put and what not to put into the report. Ideally, you re-write
+%		the abstract once you finished your report, because only at this point
+%		you have all the information available to create a good abstract.
+%
+%	\end{abstract}
+
+\end{titlepage}
+%
+%----------------------------------------------------------------------------
+%
+
+\input{documentation.tex}
+
+%\section{Problem statement}
+%
+%Your goal is to design a system that reads data from a temperature sensor,
+%that performs simple digital signal processing on captured temperature data,
+%and outputs the processed temperature value via a Seven-segment display
+%(\Cref{fig:block}).
+%
+%%\begin{figure}[h!]
+%%	\centering
+%%	\input{fig/block}
+%%	\caption{Block diagram of the system}
+%%	\label{fig:block}
+%%\end{figure}
+%
+%\noindent
+%You have to design three \gls{ip} cores:
+%
+%\begin{enumerate}
+%
+%	\item{Data sampling: This \gls{ip} core controls and reads the output of
+%		the temperature sensor, and provides temperature data of a pre-defined
+%		sample rate at its output. The sample rate should be adjustable
+%		pre-synthesis. The temperature signal's resolution should be 16-bit.}
+%
+%	\item{The \gls{dsp} core should implement a moving average algorithm with
+%		a	pre-defined length of the gliding window, which should be adjustable
+%		during run-time.}
+%
+%	\item{The output stage takes the processed temperature signal
+%		and provides it to the seven segment display.}
+%
+%\end{enumerate}
+%
+%\noindent
+%Design the system using either VHDL or Verilog. You can use \gls{3pip}, but
+%you have to fully understand what you are doing, and you have to cite the
+%original source.
+%%
+%%----------------------------------------------------------------------------
+%%
+%\section{Team management}
+%
+%You can solve the problem on your own, or you can team up with others in
+%order to share work and knowledge. If you team up, it is essential that you
+%understand every aspect of the solution, rather that just the part that was
+%implemented by you.
+%%
+%In any case, use \emph{git} to organize collaboration, even in case you work
+%alone. We will assess your activity in the project based on your commits.
+%%
+%%----------------------------------------------------------------------------
+%%
+%\section{Proposed solution}
+%
+%Model the system in any \gls{hdl} of your choice. Design a testbench with
+%reasonable test cases, and verify the design's functional correctness by
+%simulating
+%your design. Use any simulator you prefer, however, support is only provided
+%for \emph{ghdl}, \emph{Verilator}, \emph{Icarus Verilog}, and
+%\emph{xsim}. You can use free and open-source tools for modeling, simulation
+%and synthesis. However, for technology mapping and bitstream generation (i.e.,
+%\emph{implementing} the design), you will need \emph{Vivado}.
+%Implement the design on the Nexys 4 DDR board.
+%
+%----------------------------------------------------------------------------
+%
+
+
+%
+%----------------------------------------------------------------------------
+\end{document}

@@ -8,6 +8,14 @@
 *.xml
 *.xpr
 *.bit
+*.bcf
+*.out
+*.glo
+*.aux
+*.ist
+*.gz
+*.out
+*.blg
 digitherm.cache
 digitherm.hw
 digitherm.ip_user_files 

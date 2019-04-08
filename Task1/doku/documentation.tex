@@ -1,0 +1,223 @@
+\section{Problem statement}
+
+The goal was to design a digital thermometer with the Nexys 4 DDR FPGA Board. To use was
+one of the two temperature sensors on the board. One sensor is especially for measuring the 
+temperature and to read out via i2c, while the other one is part of the accelerometer sensor
+and is to read out with SPI. The samling rate of the sensor should be defined pre-synthesis.
+The data then should go to an DSP part which was to be implemented as an moving average
+filter. The filter width should be able to be changed during runtime. The output of the DSP should
+be displayed on the 8 BCD segments on the board.
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=16cm]{fig/block}
+	\caption{Block diagram of the system. Source: Original Task Description}
+	\label{fig:block}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=16cm]{fig/schematic}
+	\caption{Schematic of the system. Source: Vivado}
+	\label{fig:block}
+\end{figure}
+
+\section {Implementation}
+In this section I explain how i implemented a possible solution to the proposed problem. I choose
+to use an active low reset for this task, which is the onboard switch with the name SW15.
+
+\subsection{Sampling}
+For the reading of the temperature i choose the onboard I2C-sensor. To get the values I
+used the IP-core from the Nexys 4 DDR Demo which includes an readout of this sensor.
+The sensor itself is an ADT7420 I2C temperature sensor. The output of the sampling part
+consists of the out_data and the out_vld ports. The out_vld ports is high for the time of 
+once clock cycle. It also has one LED, which toggles everytime valid data was retrieved.
+
+\subsubsection{Changes of the IP}
+The TWI Controller file was changed only in the way to use the ieee.numeric_std.all; library.
+Other than that this file is original.
+
+To the original readoutfiles were made some changes to get the wished functionality.
+To get 16 bit readouts I added another init vector:
+
+\lstset{style=vhdl, firstnumber=118}
+\begin{lstlisting}
+constant NO_OF_INIT_VECTORS : natural := 4; -- number of init vectors in TempSensInitMap
+constant DATA_WIDTH : integer := 1 + 8 + 8; -- RD/WR bit + 1 byte register address + 1 byte data
+constant ADDR_WIDTH : natural := natural(ceil(log(real(NO_OF_INIT_VECTORS), 2.0)));
+
+type TempSensInitMap_type is 
+	array (0 to NO_OF_INIT_VECTORS-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
+signal TempSensInitMap: TempSensInitMap_type := (
+IRD & x"0B" & x"CB", -- Read ID R[0x0B]=0xCB
+IWR & x"2F" & x"00", -- Reset R[0x2F]=don't care
+IRD & x"0B" & x"CB", -- Read ID R[0x0B]=0xCB
+IWR & x"03" & x"80"  -- configure it for 16bit
+);
+\end{lstlisting}
+
+To get the sampling timing right i added an extra state in which the I2C waits.
+
+\lstset{style=vhdl, firstnumber=101}
+\begin{lstlisting}
+constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq*1_000_000/Samples)))*2;
+
+-- State Machine states definition
+type state_type is (
+	stIdle, -- Idle State
+	stInitReg,  -- Send register address from the init vector
+	stInitData, -- Send data byte from the init vector
+	stRetry,    -- Retry state reached when there is a bus error, will retry RETRY_COUNT times
+	stReadTempR,  -- Send temperature register address
+	stReadTempD1, -- Read temperature MSB
+	stReadTempD2, -- Read temperature LSB
+	stError, -- Error state when reached when there is a bus error after a successful init; stays here until reset
+	stWait  -- State to wait for the next sample
+);
+signal state, nstate : state_type;
+\end{lstlisting}
+
+The new state was also added to the ReadyFlag process:
+
+\lstset{style=vhdl, firstnumber=252}
+\begin{lstlisting}
+----------------------------------------------------------------------------------
+-- Ready Flag
+----------------------------------------------------------------------------------  
+ReadyFlag: process (in_clk)
+begin
+	if Rising_Edge(in_clk) then
+		if (state = stIdle or state = stError) or state = stWait then
+			fReady <= false;
+		elsif (state = stReadTempD2 and twiDone = '1' and twiErr = '0') then
+			fReady <= true;
+		end if;
+	end if;
+end process;
+\end{lstlisting}
+
+In the OUTPUT_DECODE process another when statement got added.
+\lstset{style=vhdl, firstnumber=349}
+\begin{lstlisting}
+when stWait =>
+	null;
+\end{lstlisting}
+
+In the NEXT_STATE_DECODE process the stReadTempD2 state got changed and another state got added:
+\lstset{style=vhdl, firstnumber=410}
+\begin{lstlisting}
+when stReadTempD2 =>
+	if (twiDone = '1') then
+		if (twiErr = '1') then
+			nstate <= stError;
+		else
+			nstate <= stWait;
+--                  nstate <= stReadTempR; -- old version
+		end if;
+	end if;
+ 
+when stWait =>
+	if waitSample = SAMPLECNT then
+		nstate <= stReadTempR;
+	end if;
+\end{lstlisting}
+
+And a whole new process got added in which the counting happens for the sampling rate:
+\lstset{style=vhdl, firstnumber=265}
+\begin{lstlisting}
+---------------------------------------------------------------------------------- 
+-- Sample counter wait               
+----------------------------------------------------------------------------------  
+SAMPLEWAIT : process(in_clk)                                       
+begin                                                       
+	if rising_edge(in_clk) then   
+		if state = stWait then                       
+			if waitSample = SAMPLECNT then             
+				out_led <= led_helper; 
+				led_helper <= not led_helper; 
+			else 
+				waitSample <= waitSample+1; 
+			end if;                                                            
+
+		else                                                                   
+			waitSample <= 0;
+		end if;                  
+	end if;                 
+end process;
+\end{lstlisting}
+
+\subsection{DSP}
+The moving average is implemented as a state machine. The size of the filter window is determined
+by the 3 switches SW2, SW1 and SW0. Each switch equals a number to the power of 2. 
+SW0 = 1, SW1=2 and SW2=4. For example if SW2 is 
+switched on and the others off then the size equals $2^{4}=16$. or if SW1 and SW2 are on then the
+size equals $2^{2+1}=8$. It is done this way to make the divison for the mean value easier, since
+divison by a number which is a power of two equals a bitshift to the right.
+
+The formula of the mean averge is dependent on the size which gets choosen by the switches.
+
+\begin{equation}
+y = \sum_{i=0}^n x[i]
+\end{equation}
+Where $i$ represents the last value in the buffer. This way the mean average is causal but the mean
+value is shifted if you print it against the original values.
+
+I choose to implement it with a state machine. I also tried it with for loops but it took very
+long to synthesize. The synthesizing time shrunk from greater than
+25 minutes down to less than 7 minutes.
+
+When the size gets changed the buffer gets set to zero. It then gets slowly refilled and the temperature
+which gets sent to the BCD slowly increases, because it uses the fixed size for the division. 
+It is done this way to show the working of the filter on the FPGA.
+
+\subsection{Output}
+The output part gets the averaged temperature. The hard part is to get from the binary value to a 
+representation which fits on the BCD. One cannot just take the usual 4 bit approach for a segment 
+because in the decimal system values only range from 0 to 9. So if the value would be an B in hex
+one needs to subtract from the current position and add to the next position. This problem is solved
+by using the double dabble algorithm (explanation on \href{https://en.wikipedia.org/wiki/Double_dabble}{Wikipedia} or \href{https://www.youtube.com/watch?v=eXIfZ1yKFlA}{Youtube}).
+
+Since the BCD share the an anode contact there is also the need to multiplex the data which gets
+to the corresponding outputs. This is done with the out_an outputs. It is also important to notice
+that the active select anode is active low.
+
+This is solved in two processes. The first process takes the data in if the valid flag is high. Contrary to 
+DSP part it calculates the double dabble with for loops instead of a state machine. It then saves its
+solutions to variables. The second process takes these solutions, converts it to an integer format and
+uses these as indices for a predefined map of outputs. Furthermore the second process does this about
+800 times per second to get a refresh rate of 100Hz per BCD. This is done with a simple counter signal.
+
+
+\section{Reports}
+
+\subsection{Timing}
+After the first implementation
+\lstinputlisting[basicstyle=\tiny,firstnumber=1]{report-timing.txt}
+
+\subsection{Utilization}
+\subsubsection{Summary}
+I have the whole report further down. Here is the condensed information in a picture.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=10cm]{fig/utilizationgraph}
+	\caption{Utilization graph}
+%	\label{fig:block}
+\end{figure}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=10cm]{fig/utilizationtable}
+	\caption{Utilization table}
+%	\label{fig:block}
+\end{figure}
+
+I use more ports than needed because i output extra information with the LEDs and also
+use the whole BCD. The IO could be reduced this way, because who needs 4 digits after the
+comma.
+Something thats very interesting is the fact that my design uses an DSP. This is contrary to the other
+design i saw to compare. The DSP is the
+DSP48E1 and it is used in the BCD part of my design. It is needed in the part where the
+number gets calculated for the fractional part of the output temperature.
+
+
+\subsubsection{Whole Report}
+\lstinputlisting[basicstyle=\tiny,firstnumber=1]{report-utilization.txt}
