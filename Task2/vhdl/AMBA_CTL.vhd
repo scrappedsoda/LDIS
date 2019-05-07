@@ -12,6 +12,8 @@ generic (
 	samples	   : natural := 4
 	);
 port (
+	dbg_waitsmpl:inout natural;
+	dbg_nstatm : out std_logic;
 	in_PCLK		: in  std_logic;	-- system clk
 	in_PRESETn	: in  std_logic;	-- system rst
 	out_PADDR	: out std_logic;	-- APB Bridge
@@ -26,7 +28,8 @@ port (
 end AMBACtl;
 
 architecture Behaviour of AMBACtl is
-		constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq/samples)))*2;
+--		constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq/samples)))*2;
+		constant SAMPLECNT : NATURAL := 20;
 		signal waitSample : natural range 0 to SAMPLECNT := 0;
 
 		-- state type definition
@@ -56,50 +59,69 @@ architecture Behaviour of AMBACtl is
 		signal int_slave_select : std_logic_vector(num_slaves-1 downto 0);
 		signal int_addr_select : std_logic := '0';
 
+		signal int_rst : std_logic := '1';
 --		signal sig_addr : std_logic_vector(integer(floor(log2(real(num_slaves)))) downto 0);
 begin
+
+dbg_waitsmpl <= waitSample;
+--dbg_nstatm <= '1' when state = sta_access else '0';
+--dbg_nstatm <= int_want_transfer;
+dbg_nstatm <= '1' when state_m = stm_dsp_read else '0';
 
 SYNC_PROC: process (in_PCLK)
 begin
 	if rising_edge(in_PCLK) then 	-- synchron
-		if (in_PRESETn = '1') then	-- reset
+		if (in_PRESETn = '0') then	-- reset
 			state <= sta_idle;
-
+			state_m <= stm_idle;
+			int_rst <= '0';
 		else						-- no reset
+			state_m <= nstate_m;
 			state <= nstate;
+			int_rst <= '1';
 		end if;	-- reset if
 	end if; -- clock if
 end process SYNC_PROC;
 
 
-OUTPUT_DECODE: process(state)
+OUTPUT_DECODE: process(state, int_write, in_PREADY, in_PRDATA)
 begin
-	if state = sta_idle then 		-- inidle
-		out_PSELx <= (others => '0');
+	if int_rst = '0' then
+		out_PADDR 	<= '0';
 		out_PENABLE <= '0';
+		out_PWRITE  <= '0';
+		out_PWDATA  <= (others=>'0');
+		out_PSELx	<= (others=>'0');
+	else
+		case state is
+			when sta_idle =>
+				out_PSELx <= (others => '0');
+				out_PENABLE <= '0';
 
-	elsif state = sta_setup then	-- in setup 
-		out_PSELx   <= int_slave_select;
-		out_PENABLE <= '0';
-		out_PADDR   <= int_addr_select;
-		out_PWDATA  <= int_data;
-		out_PWRITE  <= int_write;
-	elsif state = sta_access then		-- in access
-		out_PSELx   <= int_slave_select;
-		out_PENABLE <= '1';
-		out_PADDR   <= int_addr_select;
-		out_PWDATA  <= int_data;
-		out_PWRITE  <= int_write;
-		if int_write = '0' then
-			if in_PREADY = '1' then
-				int_rec_data <= in_PRDATA;
-			end if;	-- in_pready
-		end if;	-- int_write
-	end if;
+			when sta_setup =>
+				out_PSELx   <= int_slave_select;
+				out_PENABLE <= '0';
+				out_PADDR   <= int_addr_select;
+				out_PWDATA  <= int_data;
+				out_PWRITE  <= int_write;
+			when sta_access =>
+				out_PSELx   <= int_slave_select;
+				out_PENABLE <= '1';
+				out_PADDR   <= int_addr_select;
+				out_PWDATA  <= int_data;
+				out_PWRITE  <= int_write;
+				if int_write = '0' then
+					if in_PREADY = '1' then
+						int_rec_data <= in_PRDATA;
+					end if;	-- in_pready
+				end if;	-- int_write
+			when others => null;
+		end case;
+	end if; -- int_rst
 		
 end process OUTPUT_DECODE;
 
-NEXT_STATE_DECODE: process (state, int_want_transfer,in_PREADY)
+NEXT_STATE_DECODE: process (state, int_write, in_PRDATA, int_want_transfer,in_PREADY)
 begin
 	nstate <= state;	-- default stay in current
 
@@ -113,12 +135,14 @@ begin
 			nstate <= sta_access;
 
 		when sta_access =>
-			if in_PREADY = '0' then
-				nstate <= state;
+			if in_PREADY = '1' and int_want_transfer ='0' then
+				nstate <= sta_idle; --state;
 			elsif in_PREADY = '1' and int_want_transfer ='1' then
 				nstate <= sta_setup;
-			else 
-				nstate <= sta_idle;
+			else -- if in_PREADY = '0' then
+				-- this way it stays in the sta_access state
+				-- WARNING! Potential bus locking
+				nstate <= sta_access;
 			end if;
 
 	end case;	-- state case
@@ -166,17 +190,19 @@ end process NEXT_STATE_DECODE;
 --
 --end process state_change;
 
-STATE_M_DECODE: process 
+STATE_M_DECODE: process (state_m, state)
 begin
 	case state_m is
 		when stm_idle =>
 			null;
 
 		when stm_adt =>
-			int_want_transfer <= '1';
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
 			int_slave_select <= ADT7420;
 			int_addr_select <= '0';
-			int_write <= '1';
+			int_write <= '0';
 			int_data <= (others => '0');
 			-- deactivate the want_transfer when 
     		if state = sta_setup then
@@ -184,7 +210,9 @@ begin
 			end if;
 
 		when stm_dsp_write =>
-			int_want_transfer <= '1';
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
 			int_slave_select <= DSP;
 			int_addr_select <= '0';
 			int_write <= '1';
@@ -195,7 +223,9 @@ begin
 			end if;
 
 		when stm_dsp_read =>
-			int_want_transfer <= '1';
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
 			int_slave_select <= DSP;
 			int_addr_select <= '0';
 			int_write <= '0';
@@ -206,7 +236,9 @@ begin
 			end if;
 
 		when stm_out =>
-			int_want_transfer <= '1';
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
 			int_slave_select <= OUTPUT_LED;
 			int_addr_select <= '0';
 			int_write <= '1';
@@ -222,7 +254,7 @@ begin
 
 end process STATE_M_DECODE;
 
-STATE_M_NEXT: process
+STATE_M_NEXT: process (state_m, state, waitSample, in_PREADY)
 
 begin
 	nstate_m <= state_m;	-- stay in current state
@@ -244,7 +276,7 @@ begin
 
 		when stm_dsp_read =>
 			if state = sta_access and in_PREADY = '1' then
-				nstate_m <= stm_dsp_read;
+				nstate_m <= stm_out;
 			end if;
 
 		when stm_out =>
@@ -266,7 +298,7 @@ begin
 			else
 				waitSample <= waitSample+1;
 			end if;
-		else
+		else	-- state_m /= stm_idle
 			waitSample <= 0;
 		end if;
 	end if;
