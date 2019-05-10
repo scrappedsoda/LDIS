@@ -37,7 +37,7 @@ architecture behav of amba_tb is
     );
 	port (
 		dbg_waitsmpl:inout natural;
-		dbg_nstatm : out std_logic;
+		dbg_nstatm : inout natural;
 		in_PCLK	: in  std_logic;	-- system clk
 		in_PRESETn	: in  std_logic;	-- system rst
 		out_PADDR	: out std_logic;	-- APB Bridge
@@ -55,7 +55,7 @@ architecture behav of amba_tb is
 	for AMBA_M0: AMBACtl use entity work.AMBACtl;
 
 	signal dbg_waitsmpl : natural;
-	signal dbg_nstatm : std_logic;
+	signal dbg_nstatm : natural;
 
 	signal clk		:std_logic := '0';	-- system clk
 	signal PRESETn	:std_logic := '1';	-- system rst
@@ -65,7 +65,7 @@ architecture behav of amba_tb is
 	signal PWDATA   :std_logic_vector(bus_size-1 downto 0);	-- APB Bridge
 	signal PSELx	:std_logic_vector (num_slaves-1 downto 0);	-- APB Bridge
 	signal PREADY   :std_logic;	-- slave interface 
-	signal PRDATA   :std_logic_vector((bus_size*num_slaves)-1 downto 0);	-- slave interface 
+	signal PRDATA   :std_logic_vector((bus_size*num_slaves)-1 downto 0) := (others=>'0');	-- slave interface 
 	signal PSLVERR  :std_logic; 	-- slave interface 
 
 	signal Finish : std_logic := '0';
@@ -106,11 +106,18 @@ begin
 	wait for Tperiod;
 	PRESETn <= '1';
     wait for 5*Tperiod;
-	put_data_slave(clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
---	wait for Tperiod;
-	put_data_slave(clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
-	put_data_slave(clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
-	put_data_slave(clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	-- answer from the adt
+	put_data_slave(0, x"328A", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	-- dsp_write
+	put_data_slave(0, x"3243", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	-- dsp_read
+	put_data_slave(8, x"3243", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	-- output_write
+	put_data_slave(1, x"3243", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	put_data_slave(0, x"328A", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	put_data_slave(0, x"328A", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	put_data_slave(0, x"328A", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
+	put_data_slave(0, x"328A", clk, PENABLE, PWRITE, PWDATA, PSELx, PREADY, PRDATA);
 	wait for 30*Tperiod;
 	Finish <= '1';
 	wait;

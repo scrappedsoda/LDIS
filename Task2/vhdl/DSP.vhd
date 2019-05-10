@@ -76,12 +76,13 @@ if rising_edge(in_clk) then
 			-- here begins the state machine
 			case state is
 				when st_idle =>
-					if in_drdy /='1' then
-						state <= st_read;
-					end if;
---					t_mean := 0;
 					t_mean := (others => '0');
 					out_vld <= '1';
+					if in_drdy /='1' then
+						state <= st_read;
+						out_vld <= '0';
+					end if;
+--					t_mean := 0;
 	
 				when st_read =>
 					if in_drdy ='1' then		-- wait for valid data

@@ -13,7 +13,7 @@ generic (
 	);
 port (
 	dbg_waitsmpl:inout natural;
-	dbg_nstatm : out std_logic;
+	dbg_nstatm : inout natural; 
 	in_PCLK		: in  std_logic;	-- system clk
 	in_PRESETn	: in  std_logic;	-- system rst
 	out_PADDR	: out std_logic;	-- APB Bridge
@@ -28,15 +28,22 @@ port (
 end AMBACtl;
 
 architecture Behaviour of AMBACtl is
---		constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq/samples)))*2;
-		constant SAMPLECNT : NATURAL := 20;
+		constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq/samples)))*2;
+--		constant SAMPLECNT : NATURAL := 20;	-- for DEBUG purposes
 		signal waitSample : natural range 0 to SAMPLECNT := 0;
+
+		-- if i wait until clockfreq i get 1s resolution. For 100ms resolution I have to wait
+		-- until clockfreq/10
+		constant SWITCHCNT : NATURAL := natural(ceil(real(clockfreq/10)));
+--		constant SWITCHCNT : NATURAL := 1000; -- for dEBUG purposes
+		signal waitSwitch : natural range 0 to SWITCHCNT := 0;
 
 		-- state type definition
 		type state_type_AMBA is (sta_idle, sta_setup, sta_access);
 		signal state, nstate : state_type_AMBA;
 
-		type state_type_Master is (stm_idle, stm_adt, stm_dsp_read, stm_dsp_write, stm_out);
+		type state_type_Master is (stm_idle, stm_adt, stm_dsp_read, stm_dsp_write, 
+				stm_out, stm_switch_read, stm_write_switch_data);
 		signal state_m, nstate_m : state_type_Master;
 
 		subtype slave_num is std_logic_vector(num_slaves-1 downto 0);
@@ -50,7 +57,8 @@ architecture Behaviour of AMBACtl is
 		alias ADT7420_RREG: 		std_logic_vector(15 downto 0) is int_rec_data(15 downto  0);
 		alias DSP_RREG: 			std_logic_vector(15 downto 0) is int_rec_data(31 downto 16);
 		alias OUTPUT_LED_RREG: 		std_logic_vector(15 downto 0) is int_rec_data(47 downto 32);
-		alias INPUT_SWITCH_RREG: 	std_logic_vector( 2 downto 0) is int_rec_data(50 downto 48);
+		alias INPUT_SWITCH_RREG: 	std_logic_vector(15 downto 0) is int_rec_data(63 downto 48);
+--		alias INPUT_SWITCH_RREG: 	std_logic_vector( 2 downto 0) is int_rec_data(50 downto 48);
 
 		signal sig_read_adt : std_logic := '0';
 		signal int_want_transfer : std_logic := '0';
@@ -58,16 +66,16 @@ architecture Behaviour of AMBACtl is
 		signal int_write : std_logic := '0';
 		signal int_slave_select : std_logic_vector(num_slaves-1 downto 0);
 		signal int_addr_select : std_logic := '0';
+		signal old_switch_data : std_logic_vector(2 downto 0);
 
 		signal int_rst : std_logic := '1';
 --		signal sig_addr : std_logic_vector(integer(floor(log2(real(num_slaves)))) downto 0);
 begin
 
-dbg_waitsmpl <= waitSample;
+dbg_waitsmpl <= waitSwitch;
 --dbg_nstatm <= '1' when state = sta_access else '0';
 --dbg_nstatm <= int_want_transfer;
-dbg_nstatm <= '1' when state_m = stm_dsp_read else '0';
-
+dbg_nstatm <= waitSample;
 SYNC_PROC: process (in_PCLK)
 begin
 	if rising_edge(in_PCLK) then 	-- synchron
@@ -151,44 +159,6 @@ begin
 end process NEXT_STATE_DECODE;
 
 
---state_change: process(in_PCLK)
---
---begin
---
---if rising_edge(in_PCLK) then
---	if in_PRESETn = '1' then
---		state <= st_idle;	
---	else	-- reset is not pressed
---		case state is		-- state diagram
---			when sta_idle =>	-- standard state
---				out_PSELX <= (others => '0');
---				out_PENABLE <= '0';
---				if wantWrite = '1' then
---					state <= sta_setup;
---				end if;
---
---			when sta_setup => -- here it asserts the appropiate select signals
---				out_PSELX <= sig_addr;
---				out_PENABLE <= '0';
---					
---			when sta_access => 
---				out_PSELX <= sig_addr;
---				out_PENABLE <= '1';
---				if 	
---							-- PENABLE is asserted here
---							-- address, write, select and write data
---							-- exit from access is contorlled by pready from slave
---							-- if pready is hold low bus remains in access state
---							-- if pready is high  by the slave access is exited and bus
---							-- returns to idle if no more transfers are required or
---							-- moves directly to setup if another transfer is wanted
---			when others =>
---				state <= st_idle;
---		end case;
---	end if;
---end if;
---
---end process state_change;
 
 STATE_M_DECODE: process (state_m, state)
 begin
@@ -248,6 +218,32 @@ begin
 				int_want_transfer <= '0';
 			end if;
 
+		when stm_switch_read =>
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
+			int_slave_select <= INPUT_SWITCH;
+			int_addr_select <= '0';
+			int_write <= '0';
+			int_data <= INPUT_SWITCH_RREG;
+			-- deactivate the want_transfer when 
+    		if state = sta_setup then
+				int_want_transfer <= '0';
+			end if;
+
+		when stm_write_switch_data =>
+			if state = sta_idle then
+				int_want_transfer <= '1';
+			end if;
+			int_slave_select <= DSP;
+			int_addr_select <= '1';
+			int_write <= '1';
+			int_data <= INPUT_SWITCH_RREG;
+			-- deactivate the want_transfer when 
+    		if state = sta_setup then
+				int_want_transfer <= '0';
+			end if;
+
 		when others => null;
 	-- state_m_next howto check if transac ended?
 	end case;	-- state_m
@@ -262,6 +258,8 @@ begin
 		when stm_idle =>
 			if waitSample = SAMPLECNT then
 				nstate_m <= stm_adt;
+			elsif waitSwitch = SWITCHCNT then 
+				nstate_m <= stm_switch_read;
 			end if;	-- waitSample
 
 		when stm_adt =>
@@ -283,6 +281,24 @@ begin
 			if state = sta_access and in_PREADY = '1' then
 				nstate_m <= stm_idle;
 			end if;
+
+		when stm_switch_read =>
+			if state = sta_access and in_PREADY = '1' then
+				if old_switch_data /= INPUT_SWITCH_RREG then
+					nstate_m <= stm_write_switch_data;
+				else 	-- old switch data is equal to new switch data
+					nstate_m <= stm_idle;
+				end if;
+			end if;
+
+		when stm_write_switch_data =>
+			if state = sta_access and in_PREADY = '1' then
+				-- after successfully writing the data to the dsp go down
+				-- the standard route to read dsp and rewrite output
+				nstate_m <= stm_dsp_read;
+			end if;
+
+
 		when others => 
 			nstate_m <= stm_idle;
 	end case;	-- state_m
@@ -292,14 +308,34 @@ end process STATE_M_NEXT;
 SAMPLEWAIT : process(in_PCLK)
 begin
 	if rising_edge(in_PCLK) then
+		-- only count in the idle state
 		if state_m = stm_idle then
 			if waitSample = SAMPLECNT then
 				-- place for debug signals
 			else
 				waitSample <= waitSample+1;
 			end if;
-		else	-- state_m /= stm_idle
+		-- if state changes to stm_adt reset the counter
+		elsif state_m = stm_adt then	-- state_m /= stm_idle
 			waitSample <= 0;
+		end if;
+	end if;
+end process;
+
+-- process which counts to switch time
+SWITCHWAIT : process(in_PCLK)
+begin
+	if rising_edge(in_PCLK) then
+		-- only count in the idle state
+		if state_m = stm_idle then
+			if waitSwitch = SWITCHCNT then
+				-- place for debug signals
+			else
+				waitSwitch <= waitSwitch+1;
+			end if;
+		-- if state changes to switch_read reset the counter
+		elsif state_m = stm_switch_read then	-- state_m /= stm_idle
+			waitSwitch <= 0;
 		end if;
 	end if;
 end process;
