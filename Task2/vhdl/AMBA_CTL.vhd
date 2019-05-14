@@ -12,7 +12,7 @@ generic (
 	samples	   : natural := 4
 	);
 port (
-	dbg_waitsmpl:inout natural;
+	dbg_wait   : out std_logic;
 	dbg_nstatm : inout natural; 
 	in_PCLK		: in  std_logic;	-- system clk
 	in_PRESETn	: in  std_logic;	-- system rst
@@ -68,14 +68,15 @@ architecture Behaviour of AMBACtl is
 		signal int_addr_select : std_logic := '0';
 		signal old_switch_data : std_logic_vector(2 downto 0);
 
+		signal dbg_wait_help : std_logic := '0';
 		signal int_rst : std_logic := '1';
 --		signal sig_addr : std_logic_vector(integer(floor(log2(real(num_slaves)))) downto 0);
 begin
 
-dbg_waitsmpl <= waitSwitch;
+--dbg_waitsmpl <= waitSwitch;
 --dbg_nstatm <= '1' when state = sta_access else '0';
 --dbg_nstatm <= int_want_transfer;
-dbg_nstatm <= waitSample;
+--dbg_nstatm <= waitSample;
 SYNC_PROC: process (in_PCLK)
 begin
 	if rising_edge(in_PCLK) then 	-- synchron
@@ -88,6 +89,13 @@ begin
 			state <= nstate;
 			int_rst <= '1';
 		end if;	-- reset if
+
+		if (nstate_m = stm_idle) and not (state_m = stm_idle) then
+			dbg_wait <= dbg_wait_help;
+			dbg_wait_help <= not dbg_wait_help;
+		end if;
+
+
 	end if; -- clock if
 end process SYNC_PROC;
 
@@ -165,7 +173,6 @@ begin
 	case state_m is
 		when stm_idle =>
 			null;
-
 		when stm_adt =>
 			if state = sta_idle then
 				int_want_transfer <= '1';

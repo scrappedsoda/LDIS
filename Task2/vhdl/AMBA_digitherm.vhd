@@ -30,7 +30,8 @@ entity digitherm is
 		out_an		: out std_logic_vector((8-1) downto 0);
 		out_size_check 	: out std_logic_vector(2 downto 0);
 		out_size		: out std_logic_vector(7 downto 0);
-		out_adt_led 	: out std_logic
+		out_adt_led 	: out std_logic;
+		dbg_wait 	: out std_logic
 	);
 end digitherm;
 
@@ -41,7 +42,7 @@ architecture behaviour of digitherm is
 -- component declarations
 --    constant num_slaves : natural := 4;
 --    constant bus_size   : natural := 16;
---    constant clockfreq  : natural := 1000000;
+--    constant clockfreq  : natural := 50_000_000;
 --    constant samples	: natural := 4;
 
 
@@ -49,11 +50,11 @@ architecture behaviour of digitherm is
 	generic (
 		num_slaves : natural := 4;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000;
+		clockfreq  : natural := 50_000_000;
 		samples	   : natural := 4
     );
 	port (
-		dbg_waitsmpl:inout natural;
+		dbg_wait	: out std_logic;
 		dbg_nstatm : inout natural;
 		in_PCLK	: in  std_logic;	-- system clk
 		in_PRESETn	: in  std_logic;	-- system rst
@@ -73,7 +74,7 @@ architecture behaviour of digitherm is
 		slave_num : natural := 1;
 --		num_slaves: natural := 4;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000
+		clockfreq  : natural := 50_000_000
 		);
 	port (
 		in_PCLK		: in  std_logic;	-- system clk
@@ -98,7 +99,7 @@ architecture behaviour of digitherm is
 	generic (
 		slave_num : natural := 2;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000
+		clockfreq  : natural := 50_000_000
 		);
 	port (
 		in_PCLK		: in std_logic;	-- system clk
@@ -121,7 +122,7 @@ architecture behaviour of digitherm is
 	generic (
 		slave_num : natural := 2;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000
+		clockfreq  : natural := 50_000_000
 		);
 	port (
 		in_PCLK		: in std_logic;	-- system clk
@@ -144,7 +145,7 @@ architecture behaviour of digitherm is
 	generic (
 		slave_num : natural := 4;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000
+		clockfreq  : natural := 50_000_000
 		);
 	port (
 		in_PCLK		: in  std_logic;	-- system clk
@@ -211,6 +212,7 @@ begin
 		samples	   => samples	   
     )
 	port map (
+		dbg_wait => dbg_wait,
 		in_PCLK		=> in_clk,
 		in_PRESETn	=> in_rst,
 		out_PADDR	=> out_PADDR,
