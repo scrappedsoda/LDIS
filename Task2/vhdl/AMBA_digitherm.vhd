@@ -17,7 +17,7 @@ entity digitherm is
 	--	Samples   : integer := 1
     	num_slaves : natural := 4;
     	bus_size   : natural := 16;
-    	clockfreq  : natural := 50_000_000;
+    	clockfreq  : natural := 100_000_000;	-- 100 MHz
     	samples	: natural := 4
 	);
 	port (

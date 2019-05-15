@@ -265,8 +265,8 @@ begin
 		when stm_idle =>
 			if waitSample = SAMPLECNT then
 				nstate_m <= stm_adt;
-			elsif waitSwitch = SWITCHCNT then 
-				nstate_m <= stm_switch_read;
+--			elsif waitSwitch = SWITCHCNT then 
+--				nstate_m <= stm_switch_read;
 			end if;	-- waitSample
 
 		when stm_adt =>

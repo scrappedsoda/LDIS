@@ -24,7 +24,7 @@ architecture behav of amba_tb is
 	--  Declaration of the component that will be instantiated.
     constant num_slaves : natural := 4;
     constant bus_size   : natural := 16;
-    constant clockfreq  : natural := 1000000;
+    constant clockfreq  : natural := 100_000_000;
     constant samples	: natural := 4;
 
 
@@ -32,11 +32,11 @@ architecture behav of amba_tb is
 	generic (
 		num_slaves : natural := 4;
 		bus_size   : natural := 16;
-		clockfreq  : natural := 1000000;
+		clockfreq  : natural := 1000;
 		samples	   : natural := 4
     );
 	port (
-		dbg_waitsmpl:inout natural;
+		dbg_wait :out std_logic;
 		dbg_nstatm : inout natural;
 		in_PCLK	: in  std_logic;	-- system clk
 		in_PRESETn	: in  std_logic;	-- system rst
@@ -54,7 +54,7 @@ architecture behav of amba_tb is
 	--  Specifies which entity is bound with the component.
 	for AMBA_M0: AMBACtl use entity work.AMBACtl;
 
-	signal dbg_waitsmpl : natural;
+	signal dbg_waitsmpl : std_logic;
 	signal dbg_nstatm : natural;
 
 	signal clk		:std_logic := '0';	-- system clk
@@ -83,7 +83,7 @@ begin
 		samples	   => samples	   
     )
 	port map (
-		dbg_waitsmpl => dbg_waitsmpl,
+		dbg_wait => dbg_waitsmpl,
 		dbg_nstatm => dbg_nstatm,
 		in_PCLK	=> clk,
 		in_PRESETn	=> PRESETn,
