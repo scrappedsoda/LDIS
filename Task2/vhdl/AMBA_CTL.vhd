@@ -241,7 +241,7 @@ begin
 				int_slave_select <= DSP;
 				int_addr_select <= '0';
 				int_write <= '1';
-				int_data <= x"0F30"; --ADT7420_RREG;
+				int_data <= ADT7420_RREG; --x"0F30"; --ADT7420_RREG;
 				-- deactivate the want_transfer when 
 	    		if state = sta_setup then
 					int_want_transfer <= '0';

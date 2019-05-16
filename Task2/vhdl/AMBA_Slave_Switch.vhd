@@ -38,8 +38,8 @@ architecture Behaviour of Amba_Slave_Switch is
 
 	signal int_data : std_logic_vector(bus_size-1 downto 0);
 	signal int_PREADY : std_logic;
-	shared variable int_PREADY_t1 : std_logic;
-	shared variable int_PREADY_t2 : std_logic;
+--	shared variable int_PREADY_t1 : std_logic;
+--	shared variable int_PREADY_t2 : std_logic;
 
 	signal nrst : std_logic;
 

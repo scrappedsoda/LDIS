@@ -77,7 +77,7 @@ begin
 --	-- FRO DEBUG
 --	int_data(15 downto 0) <= x"4567";
 
-	ASYNC: process (in_PENABLE, in_PCLK, in_PRESETn, adt_rdy, int_PREADY, state)
+	ASYNC: process (in_PENABLE, in_PCLK, in_PRESETn, adt_rdy, int_PREADY, state, in_PSELx, in_PWRITE, in_PADDR, int_data)
 	begin
 		if in_PRESETn = '0' then
 			int_data <= (others =>'0');
