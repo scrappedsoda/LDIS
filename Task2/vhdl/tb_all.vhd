@@ -9,7 +9,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
-use work.testbench_utils.all;
+--use work.testbench_utils.all;
 
 entity amba_digitherm_tb is
 end amba_digitherm_tb;
@@ -24,7 +24,7 @@ architecture behav of amba_digitherm_tb is
 	--  Declaration of the component that will be instantiated.
     constant num_slaves : natural := 4;
     constant bus_size   : natural := 16;
-    constant clockfreq  : natural := 1000000;
+    constant clockfreq  : natural := 10_000;
     constant samples	: natural := 4;
 
 
@@ -36,8 +36,9 @@ architecture behav of amba_digitherm_tb is
 		samples	   : natural := 4
     );
 	port (
-		dbg_waitsmpl:inout natural;
-		dbg_nstatm : inout natural;
+		dbg_wait   : out std_logic;
+		dbg_wait2: out std_logic;
+		dbg_ledsize:out std_logic_vector(2 downto 0);
 		in_PCLK	: in  std_logic;	-- system clk
 		in_PRESETn	: in  std_logic;	-- system rst
 		out_PADDR	: out std_logic;	-- APB Bridge
@@ -99,7 +100,7 @@ architecture behav of amba_digitherm_tb is
 
 	component AMBABCDSlave
 	generic (
-		slave_num : natural := 2;
+		slave_num : natural := 3;
 		bus_size   : natural := 16;
 		clockfreq  : natural := 1000000
 		);
@@ -148,13 +149,14 @@ architecture behav of amba_digitherm_tb is
 
 	--  Specifies which entity is bound with the component.
 	for AMBA_M0: AMBACtl use entity work.AMBACtl;
-	for AMBA_S1: AMBAADTSlave use entity work.Amba_Slave_ADT;
+	for AMBA_S1: AMBAADTSlave use entity work.Amba_Slave_ADT_stub;
 	for AMBA_S2: AMBADSPSlave use entity work.Amba_Slave_DSP;
 	for AMBA_S3: AMBABCDSlave use entity work.Amba_Slave_Output;
---	for AMBA_S4: AMBASwitchSlave use entity work.Amba_Slave_Switch;
+	for AMBA_S4: AMBASwitchSlave use entity work.Amba_Slave_Switch;
 
-	signal dbg_waitsmpl : natural;
-	signal dbg_nstatm : natural;
+	signal dbg_wait :std_logic;
+	signal dbg_wait2 :std_logic;
+	signal dbg_ledsize : std_logic_vector(2 downto 0);
 
 	signal clk		:std_logic := '0';	-- system clk
 	signal PRESETn	:std_logic := '1';	-- system rst
@@ -184,6 +186,8 @@ architecture behav of amba_digitherm_tb is
 	signal out_seg : std_logic_vector(7 downto 0);
 	signal out_an : std_logic_vector(7 downto 0);
 
+	signal in_size : std_logic_vector(2 downto 0) := "100";
+
 begin
 
 	clk <= not clk after Tperiod/2 when Finish /= '1' else '0';
@@ -211,8 +215,9 @@ begin
 		samples	   => samples	   
     )
 	port map (
-		dbg_waitsmpl => dbg_waitsmpl,
-		dbg_nstatm => dbg_nstatm,
+		dbg_wait => dbg_wait,
+		dbg_wait2 => dbg_wait2,
+		dbg_ledsize => dbg_ledsize,
 		in_PCLK	=> clk,
 		in_PRESETn	=> PRESETn,
 		out_PADDR	=> PADDR,
@@ -290,6 +295,29 @@ begin
 		out_seg		=> out_seg,
 		out_an 		=> out_an
 	);
+
+	AMBA_S4: AMBASwitchSlave 
+	generic map (
+		slave_num  => 4,
+		bus_size   => bus_size,
+		clockfreq  => clockfreq
+		)
+	port map (
+		in_PCLK		=> clk,
+		in_PRESETn	=> PRESETn,
+	                                   
+		in_size 	=> in_size,	
+	                		
+		in_PADDR			=> PADDR,
+		in_PENABLE			=> PENABLE,
+		in_PWRITE   		=> PWRITE,
+		in_PWDATA   		=> PWDATA,
+		in_PSELx			=> SLV4, 
+		out_PREADY	        => PREADY,
+		out_PRDATA	        => DSLV4,
+		out_PSLVERR	        => PSLVERR
+	);
+
 
 
 ----------------------

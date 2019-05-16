@@ -11,6 +11,7 @@ generic (
 	clockfreq  : natural := 1000000
 	);
 port (
+	out_intpr   : out std_logic;
 	in_PCLK		: in std_logic;	-- system clk
 	in_PRESETn	: in std_logic;	-- system rst
 
@@ -68,136 +69,85 @@ architecture Behaviour of Amba_Slave_DSP is
 	signal dsp_out_size_check	: std_logic_vector(2 downto 0);
 	signal dsp_out_size: std_logic_vector(7 downto 0);
 
+	signal helper : std_logic := '0';
 begin
 
 	out_PREADY <= '1' when int_PREADY = '1' else 'Z';
+	out_intpr <= helper;
 
-	ASYNC: process (in_PENABLE, in_PCLK, state, in_PRESETn, dsp_out_vld, int_new_data)
+	ASYNC: process (in_PENABLE, in_PCLK, state, in_PRESETn, dsp_out_vld, int_new_data,
+			in_PSELx, in_PWRITE,  helper, in_PADDR, in_PWDATA, dsp_out_avg)
 	begin
-		case state is
-			when sts_idle =>
-				dsp_in_drdy <= '0';
-				int_PREADY <= '0';
-				if rising_edge(in_PENABLE) then
-					state <= sts_eval;
-				end if;
+		if in_PRESETn = '0' then
+			int_data <= (others =>'0');
+			int_PREADY <= '0';
+			state <= sts_idle;
+			dsp_in_drdy <= '0';
+			dsp_in_data <= (others=>'0');
+			dsp_in_size <= "000";
+			want_read_data <= '0';
 
-			when sts_eval =>
-					if in_PSELx = '1' then
-						if in_PWRITE = '1' then
-							state <= sts_write;
-						else
-							state <= sts_read;
-						end if;
-					else
-						state <= sts_idle;
+		else
+			case state is
+				when sts_idle =>
+					dsp_in_drdy <= '0';
+					int_PREADY <= '0';
+					if rising_edge(in_PENABLE) then
+						state <= sts_eval;
 					end if;
+	
+				when sts_eval =>
+						if in_PSELx = '1' then
+							if in_PWRITE = '1' then
+								state <= sts_write;
+							else
+								helper <= not helper;
+								state <= sts_read;
+							end if;
+						else
+							state <= sts_idle;
+						end if;
 
-			when sts_write =>
-				if in_PADDR = '0' then
-					-- new data delivery
-					int_rec_data <= in_PWDATA;
-					int_new_data <= '1';
-					dsp_in_drdy  <= '1';
-					dsp_in_data  <= in_PWDATA(15 downto 0);
 
-					int_PREADY   <= '1';
-				else -- in_PADDR ='1'
-					int_rec_data <= in_PWDATA;
-					dsp_in_size  <= in_PWDATA(2 downto 0);
-					int_PREADY   <= '1';
+
+
+						
+
+
+				when sts_write =>
+					if in_PADDR = '0' then
+						-- new data delivery
+						int_rec_data <= in_PWDATA;
+						int_new_data <= '1';
+						dsp_in_drdy  <= '1';
+						dsp_in_data  <= in_PWDATA(15 downto 0);
+	
+						int_PREADY   <= '1';
+					else -- in_PADDR ='1'
+						int_rec_data <= in_PWDATA;
+						dsp_in_size  <= in_PWDATA(2 downto 0);
+						int_PREADY   <= '1';
+					end if;
+	
+				when sts_read =>
+					if in_PADDR = '0' then
+						if int_new_data = '0' then
+							out_PRDATA <= dsp_out_avg; --int_data;	
+							int_PREADY <= '1';
+							want_read_data <= '0';
+						end if;	-- int_new_data
+					end if; 
+			end case;
+
+			if rising_edge(in_PCLK) then
+				if int_PREADY = '1' then --state = sts_read or state = sts_write then
+					state <= sts_idle;
 				end if;
-
-			when sts_read =>
-				if in_PADDR = '0' then
-					if int_new_data = '0' then
-						out_PRDATA <= dsp_out_avg; --int_data;	
-						int_PREADY <= '1';
-						want_read_data <= '0';
-					end if;	-- int_new_data
-				end if; 
-		end case;
-
-		if rising_edge(in_PCLK) then
-			if int_PREADY = '1' then --state = sts_read or state = sts_write then
-				state <= sts_idle;
 			end if;
+			if rising_edge(dsp_out_vld) then
+				int_new_data <= '0';
+			end if;	-- dsp_out_vld
 		end if;
-		if rising_edge(dsp_out_vld) then
-			int_new_data <= '0';
-		end if;	-- dsp_out_vld
-
---			if want_read_data = '1' then
---				if int_new_data = '0' then
---					out_PRDATA <= dsp_out_avg; --int_data;	
---					int_PREADY <= '1';
-----					out_PREADY <= '1';
---					want_read_data <= '0';
---				end if;	-- int_new_data
---			end if; -- want_read_data
-				
---		if rising_edge (in_PENABLE) then	-- rising_edge penable
---			if in_PSELx = '1' then
---				case in_PADDR is
---					when '0' =>	-- dsp data
---
---						if in_PWRITE = '1' then	-- here to deliver me new data
---							-- do i even need int_rec_data?
---							int_rec_data <= in_PWDATA;
---
---							int_new_data <= '1';	-- to show if the data is new
---							dsp_in_drdy <= '1';		-- show the dsp new data is here
---							dsp_in_data <= in_PWDATA(15 downto 0); -- put the new data
---							-- set pready to end the transaction
---							int_PREADY <= '1';
-----							out_PREADY <= '1';
---						else	-- wants to read the new data word
---							want_read_data <= '1';
---
-----							int_got_data <= '1';
---						end if;
---
---					when '1' =>	-- dsp settings (size)
---						if in_PWRITE = '1' then
---							dsp_in_size <= in_PWDATA(2 downto 0);
---							int_PREADY <= '1';
-----							out_PREADY <= '1';
---						else
---							null;
-----							out_PRDATA <= int_data;	
---						end if;
---
---					when others =>
---							null;
---
---				end case; -- in_PADDR
---			end if;	-- in_PSELx
---		end if;	-- rising_edge(in_PENABLE)
---		
---		if rising_edge(in_PCLK) then
---			if dsp_in_drdy = '1' then
---				dsp_in_drdy <= '0';
---			end if;
---
---			if int_PREADY = '1' then
---				int_PREADY <= '0';
-----				out_PREADY <= 'Z';
---			end if;
---			if want_read_data = '1' then
---				if int_new_data = '0' then
---					out_PRDATA <= dsp_out_avg; --int_data;	
---					int_PREADY <= '1';
-----					out_PREADY <= '1';
---					want_read_data <= '0';
---				end if;	-- int_new_data
---			end if; -- want_read_data
---		end if;	-- in_PCLK
---
---		-- if the new data is computed signal it
---		if rising_edge(dsp_out_vld) then
---			int_new_data <= '0';
---		end if;	-- dsp_out_vld
-
 
 	end process ASYNC;
 

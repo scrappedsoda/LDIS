@@ -10,8 +10,6 @@
 
 ./ghdlit.sh
 
-ghdl -s testbench_utils.vhd 
-ghdl -a testbench_utils.vhd
 
 ghdl -s $1
 ghdl -a $1

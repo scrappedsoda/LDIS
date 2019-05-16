@@ -98,7 +98,7 @@ architecture behaviour of ADT7420 is
 	constant DELAY_CYCLES : NATURAL := natural(ceil(real(DELAY*1000*clockfreq)));
 	constant RETRY_COUNT : NATURAL := 10;
 
-	constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq*1_000_000/Samples)))*2;
+	constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq*1_000_000/Samples)));
 
 	-- State Machine states definition
 	type state_type is (

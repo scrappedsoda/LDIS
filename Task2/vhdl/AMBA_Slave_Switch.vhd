@@ -12,9 +12,10 @@ generic (
 	clockfreq  : natural := 1000000
 	);
 port (
+	out_intpr   : out std_logic;
 	in_PCLK		: in  std_logic;	-- system clk
 	in_PRESETn	: in  std_logic;	-- system rst
-
+	
 	in_size 	: in std_logic_vector(2 downto 0);
 
 	in_PADDR	: in std_logic;	-- APB Bridge
@@ -47,88 +48,51 @@ architecture Behaviour of Amba_Slave_Switch is
 	signal switch_state : std_logic_vector(2 downto 0);
 begin
 	out_PREADY <= '1' when int_PREADY = '1' else 'Z';
+	out_intpr <= int_PREADY;
 	
 --	int_data <= in_PWDATA;
-    NSTATE_DECODE: process(in_PENABLE, in_PCLK, state)
+    NSTATE_DECODE: process(in_PENABLE, in_PCLK, state, in_PSELx, in_PWRITE, in_PRESETn, in_size)
     begin
-        case state is
-            when sts_idle =>
-                int_PREADY <= '0';
-                if rising_edge(in_PENABLE) then
-                    state <= sts_eval;
-                end if;
-        
-            when sts_eval =>
-                if in_PSELx = '1' then
-                    if in_PWRITE = '1' then
-                        state <= sts_write;
-                    else
-                        state <= sts_read;
-                    end if;
-                else
-                    state <= sts_idle;
-                end if;
-                
-            when sts_write =>
-                null;   -- never happens with the switch
-            when sts_read =>
-                int_PREADY <= '1';
-                out_PRDATA <= (others=>'0');
-                out_PRDATA(2 downto 0) <= in_size;
-        end case;   --state
-        
-        if rising_edge(in_PCLK) then
-            if state = sts_read then
-                state <= sts_idle;
-            end if;
-        end if;
+		if in_PRESETn = '0' then
+			int_data <= (others =>'0');
+			int_PREADY <= '0';
+			state <= sts_idle;
+
+		else
+	        case state is
+	            when sts_idle =>
+	                int_PREADY <= '0';
+	                if rising_edge(in_PENABLE) then
+	                    state <= sts_eval;
+	                end if;
+	        
+	            when sts_eval =>
+	                if in_PSELx = '1' then
+	                    if in_PWRITE = '1' then
+	                        state <= sts_write;
+	                    else
+	                        state <= sts_read;
+	                    end if;
+	                else
+	                    state <= sts_idle;
+	                end if;
+	                
+	            when sts_write =>
+	                null;   -- never happens with the switch
+	            when sts_read =>
+	                int_PREADY <= '1';
+	                out_PRDATA <= (others=>'0');
+	                out_PRDATA(2 downto 0) <= in_size;
+	        end case;   --state
+	        
+	        if rising_edge(in_PCLK) then
+	            if state = sts_read then
+	                state <= sts_idle;
+	            end if;
+	        end if;
+		end if;
     end process NSTATE_DECODE;
                 
-        
---        if rising_edge (in_PENABLE) then
---            if state = sts_idle;
---            state <= sts_eval;
---        end if;
-        
-        
---    end process NSTATE_DECODE;
-    
---	ASYNC: process (in_PENABLE, in_PCLK, in_PRESETn)
---	begin
---		if rising_edge (in_PENABLE) then	-- rising_edge
---			if in_PSELx = '1' then --slave_select_check then
---				case in_PADDR is
---					when '0' =>
---						if in_PWRITE = '1' then
---							null;
---							-- never happens in the switch slave
---						else
---							out_PRDATA <= (others=>'0');
---							out_PRDATA(2 downto 0) <= switch_state;	
-----							out_PREADY <= '1';
---							int_PREADY := '1';
---						end if;
---					when others =>
---							null;
---				end case; -- in_PADDR
---			end if;	-- in_PSELx
---		end if;	-- rising_edge(in_PENABLE)
-		
---		-- putting this here. would be prettier if it had a 
---		-- process on its own or no process at all
-
---		if rising_edge(in_PCLK) then
---				if in_PRESETn = '0' then
---					out_PRDATA <= (others=>'0');
---				else 
---					if int_PREADY = '1' then
---						int_PREADY := '0';
---					end if;	-- int_pready
---				end if;
---		end if; -- in_pclk
-        
---	end process ASYNC;
-
 end behaviour;
 
 

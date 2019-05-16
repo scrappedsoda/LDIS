@@ -12,6 +12,7 @@ generic (
 	clockfreq  : natural := 1000000
 	);
 port (
+	out_intpr   : out std_logic;
 	in_PCLK		: in  std_logic;	-- system clk
 	in_PRESETn	: in  std_logic;	-- system rst
 
@@ -68,6 +69,8 @@ architecture Behaviour of Amba_Slave_ADT is
 	signal adt_led : std_logic;
 begin
 	out_PREADY <= '1' when int_PREADY = '1' else 'Z';
+	out_intpr <= int_PREADY;
+--	out_intpr   : out std_logic;
 	nrst <= not in_PRESETn;
 --	TODO RST abhandlung in internen zuständn
 
@@ -76,94 +79,56 @@ begin
 
 	ASYNC: process (in_PENABLE, in_PCLK, in_PRESETn, adt_rdy, int_PREADY, state)
 	begin
-		case state is
-			when sts_idle =>
-				int_PREADY <= '0';
-				if rising_edge(in_PENABLE) then
-					state <= sts_eval;
-				end if;
+		if in_PRESETn = '0' then
+			int_data <= (others =>'0');
+			int_PREADY <= '0';
+			state <= sts_idle;
 
-			when sts_eval =>
-				if in_PSELx = '1' then
-					if in_PWRITE = '1' then
-						state <= sts_write;
-					else
-						state <= sts_read;
+		else
+			case state is
+				when sts_idle =>
+					int_PREADY <= '0';
+					if rising_edge(in_PENABLE) then
+						state <= sts_eval;
 					end if;
-				else
+	
+				when sts_eval =>
+					if in_PSELx = '1' then
+						if in_PWRITE = '1' then
+							state <= sts_write;
+						else
+							state <= sts_read;
+						end if;
+					else
+						state <= sts_idle;
+					end if;
+	
+				when sts_write =>
+					state <= sts_idle;
+	
+				when sts_read => 
+					if in_PADDR = '0' then
+						out_PRDATA <= int_data;
+						int_PREADY <= '1';
+					end if;
+			end case;
+
+			if rising_edge(adt_rdy) then
+				int_data <= (others => '0');
+				int_data(15 downto 0) <= adt_tmp;
+			end if;
+	
+			if rising_edge(in_PCLK) then
+				if int_PREADY = '1' then --state = sts_read or state = sts_write then
 					state <= sts_idle;
 				end if;
 
-			when sts_write =>
-				state <= sts_idle;
-
-			when sts_read => 
-				if in_PADDR = '0' then
-					out_PRDATA <= int_data;
-					int_PREADY <= '1';
-				end if;
-		end case;
-
-		if rising_edge(adt_rdy) then
-			int_data <= (others => '0');
-			int_data(15 downto 0) <= adt_tmp;
-		end if;
-
-		if rising_edge(in_PCLK) then
-			if int_PREADY = '1' then --state = sts_read or state = sts_write then
-				state <= sts_idle;
-			end if;
-
-			if in_PRESETn = '0' then
-				state <= sts_idle;
-			end if;
-		end if;
-
---		if rising_edge (in_PENABLE) then	-- rising_edge penable
---			if in_PSELx = '1' then --slave_select_check then
---				case in_PADDR is
---					when '0' =>
---
---						if in_PWRITE = '1' then
---							null;
---							-- never happens in the adt slave
---						else
---							out_PRDATA <= int_data;	
-----							out_PREADY <= '1';
---							int_PREADY <= '1';
---						end if;
---					when '1' =>
---							null;
---					when others =>
---							null;
---							-- never happens in the adt slave
-----						if in_PWDATA = '1' then
-----							signal
-----						else
-----	
-----						end if;
---				end case; -- in_PADDR
---			end if;	-- in_PSELx
---		end if;	-- rising_edge(in_PENABLE)
---		
---		-- putting this here. would be prettier if it had a 
---		-- process on its own or no process at all
---
---		if rising_edge(adt_rdy) then
---			int_data <= (others => '0');
---			int_data(15 downto 0) <= adt_tmp;
---		end if;
---		if rising_edge(in_PCLK) then
 --				if in_PRESETn = '0' then
-----					out_PREADY <= 'Z';
---					out_PRDATA <= (others=>'0');
---				else 
---					if int_PREADY = '1' then
-----						out_PREADY <= 'Z';
---						int_PREADY <= '0';
---					end if;	-- int_pready
+--					state <= sts_idle;
 --				end if;
---		end if; -- in_pclk
+			end if;
+		end if;
+
 
 	end process ASYNC;
 
