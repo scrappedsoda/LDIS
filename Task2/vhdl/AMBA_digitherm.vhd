@@ -32,8 +32,7 @@ entity digitherm is
 		out_size		: out std_logic_vector(7 downto 0);
 		out_adt_led 	: out std_logic;
 		dbg_wait 	: out std_logic;
-		dbg_wait2 	: out std_logic;
-		dbg_ledsize 	: out std_logic_vector(1 downto 0)
+		dbg_ledsize 	: out std_logic_vector(2 downto 0)
 	);
 end digitherm;
 
@@ -209,9 +208,9 @@ begin
 --	out_size(2) <= out_intpr3;
 --	out_size(1) <= out_intpr2;
 --	out_size(0) <= out_intpr1;
-	out_size(3 downto 0) <= out_PSELx;
 
-	out_size(5) <= out_PENABLE;
+--	out_size(3 downto 0) <= out_PSELx;
+--	out_size(5) <= out_PENABLE;
 
 	SLV1 <= out_PSELx(0);
 	SLV2 <= out_PSELx(1);
@@ -223,7 +222,7 @@ begin
 	in_PRDATA(47 downto 32) <= DSLV3;
 	in_PRDATA(63 downto 48) <= DSLV4;
 
-	dbg_ledsize <= dbg_ledsize_temp(1 downto 0);
+	dbg_ledsize <= dbg_ledsize_temp(2 downto 0);
 
 	--  Component instantiation.
 	AMBA_M0: AMBACtl
@@ -235,7 +234,7 @@ begin
     )
 	port map (
 		dbg_wait => dbg_wait,
-		dbg_wait2 => dbg_wait2,
+		dbg_wait2 => open,
 		dbg_ledsize => dbg_ledsize_temp,
 		in_PCLK		=> in_clk,
 		in_PRESETn	=> in_rst,
@@ -294,7 +293,7 @@ begin
 		out_PRDATA			=> DSLV2,
 		out_PSLVERR			=> in_PSLVERR,
 		out_size_check 		=> out_size_check, 
-		out_size			=> open --out_size
+		out_size			=> out_size
 	);
 
 	AMBA_S3: AMBABCDSlave

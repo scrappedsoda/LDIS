@@ -60,6 +60,12 @@ architecture Behaviour of Amba_Slave_Output is
 	signal bcd_in_tmp  : std_logic_vector(15 downto 0);
 	signal bcd_out_seg : std_logic_vector(7 downto 0);
 	signal bcd_out_an  : std_logic_vector(7 downto 0);
+
+	signal enable_write : std_logic;
+	signal enable_read  : std_logic;
+
+	signal int_data_read  : std_logic_vector(bus_size-1 downto 0);
+	signal int_data_write : std_logic_vector(bus_size-1 downto 0);
 begin
 
 	out_PREADY <= '1' when int_PREADY = '1' else 'Z';
@@ -67,53 +73,125 @@ begin
 	out_seg <= bcd_out_seg;
 	out_an <= bcd_out_an;
 
+enable_write <= in_PENABLE and in_PWRITE and in_PSELx;
+enable_read  <= not in_PWRITE and in_PSELx;	-- data is read everytime to be ready on the first cycle
 
-	ASYNC: process (state, in_PENABLE, in_PCLK, in_PRESETn, int_new_data,
-		in_PSELx, in_PWRITE, in_PADDR, in_PWDATA)
-	begin
+
+
+
+
+
+-- register with the enable sigs as clock
+WRITE: process(in_PRESETn, enable_write)
+begin
+	if in_PRESETn ='0' then
+		int_data_write <= x"0000";
+	elsif rising_edge(enable_write) then
+		int_data_write <= in_PWDATA;
+	end if;
+end process WRITE;
+
+-- register with the enable sigs as clock
+READ: process(in_PRESETn, enable_read)
+begin
+	if in_PRESETn ='0' then
+		out_PRDATA <= x"0000";
+
+	elsif rising_edge(enable_read) then
+		out_PRDATA <= int_data_read;
+
+	end if;
+end process READ;
+
+PREADYP: process(enable_write, enable_read)
+begin
+	if enable_write='1' or enable_read='1' then
+		int_PREADY <= '1';
+	else
+		int_PREADY <= '0';
+	end if;
+end process PREADYP;
+
+-- process to forward the data to whatever module or to write into the read register
+SFORWARD: process(in_PRESETn, in_PCLK)
+begin
+
+	if rising_edge(in_PCLK) then
 		if in_PRESETn = '0' then
-			int_data <= (others =>'0');
-			int_new_data <= '0';
-			int_rec_data <= (others=>'0');
-			int_PREADY <= '0';
-			state <= sts_idle;
-
+			int_data_read <= x"0000";
 		else
-			case state is
-				when sts_idle =>
-					int_PREADY <= '0';
-					if rising_edge(in_PENABLE) then
-						state <= sts_eval;
-					end if;
+			if enable_write = '0' then
+				bcd_in_vld <= '1';
+				bcd_in_tmp <= int_data_write;
+			else
+				bcd_in_vld <= '0';
+				bcd_in_tmp <= bcd_in_tmp;
+			end if;
+		end if; -- rst
+	end if; -- rising clock
 
-				when sts_eval =>
-						if in_PSELx = '1' then
-							if in_PWRITE = '1' then
-								state <= sts_write;
-							else
-								state <= sts_read;
-							end if;
-						else
-							state <= sts_idle;
-						end if;
-	
-				when sts_write =>
-					if in_PADDR = '0' then
-						-- new data delivery
-						int_rec_data <= in_PWDATA;
-						int_new_data <= '1';
-						out_PRDATA <= (others=>'0');
-	
-						int_PREADY   <= '1';
-					else -- in_PADDR ='1'
-						-- shouldn't happen
-						null;
-					end if;
-	
-				when sts_read =>
---						int_PREADY <= '1';
-						null;
-			end case;
+--		if enable_write or enable_read then
+--			int_pready <= '1';
+--		else 
+--			int_pready <= '0';
+--		end if; -- enable read or write
+
+		-- here some logic to compare the data ins with the other registers and update them
+		
+end process SFORWARD;
+
+
+
+
+
+
+
+--	ASYNC: process (state, in_PENABLE, in_PCLK, in_PRESETn, int_new_data,
+--		in_PSELx, in_PWRITE, in_PADDR, in_PWDATA)
+--	begin
+--		if in_PRESETn = '0' then
+--			int_data <= (others =>'0');
+--			int_new_data <= '0';
+--			int_rec_data <= (others=>'0');
+--			int_PREADY <= '0';
+--			state <= sts_idle;
+--
+--		else
+--			case state is
+--				when sts_idle =>
+--					int_PREADY <= '0';
+--					if rising_edge(in_PENABLE) then
+--						state <= sts_eval;
+--					end if;
+--
+--				when sts_eval =>
+--						if in_PSELx = '1' then
+--							if in_PWRITE = '1' then
+--								state <= sts_write;
+--							else
+--								state <= sts_read;
+--							end if;
+--						else
+--							state <= sts_idle;
+--						end if;
+--	
+--				when sts_write =>
+--					if in_PADDR = '0' then
+--						-- new data delivery
+--						int_rec_data <= in_PWDATA;
+--						int_new_data <= '1';
+--						out_PRDATA <= (others=>'0');
+--	
+--						int_PREADY   <= '1';
+--					else -- in_PADDR ='1'
+--						-- shouldn't happen
+--						null;
+--					end if;
+--	
+--				when sts_read =>
+----						int_PREADY <= '1';
+--						null;
+--			end case;
 
 
 --			if rising_edge (in_PENABLE) then	-- rising_edge penable
@@ -144,25 +222,25 @@ begin
 --					end case; -- in_PADDR
 --				end if;	-- in_PSELx
 --			end if;	-- rising_edge(in_PENABLE)
-			
-			if rising_edge(in_PCLK) then
-				if bcd_in_vld = '1' then
-					bcd_in_vld <= '0';
-				end if;
-	
-				if int_PREADY = '1' then
-					state <= sts_idle;
-					bcd_in_tmp <= int_rec_data;
-					bcd_in_vld <= '1';
-
-					int_PREADY <= '0';
-	--				out_PREADY <= 'Z';
-				end if;
-			end if;	-- in_PCLK
-		end if;
-
-
-	end process ASYNC;
+--			
+--			if rising_edge(in_PCLK) then
+--				if bcd_in_vld = '1' then
+--					bcd_in_vld <= '0';
+--				end if;
+--	
+--				if int_PREADY = '1' then
+--					state <= sts_idle;
+--					bcd_in_tmp <= int_rec_data;
+--					bcd_in_vld <= '1';
+--
+--					int_PREADY <= '0';
+--	--				out_PREADY <= 'Z';
+--				end if;
+--			end if;	-- in_PCLK
+--		end if;
+--
+--
+--	end process ASYNC;
 
 	BCD_0 : sevenseg generic map
 	(

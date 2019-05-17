@@ -72,6 +72,15 @@ architecture Behaviour of AMBACtl is
 --		signal int_slave_select : std_logic_vector(num_slaves-1 downto 0);
 		signal int_slave_select : std_logic_vector(4-1 downto 0);
 		signal int_addr_select : std_logic := '0';
+
+		signal int_PADDR	: std_logic;	
+		signal int_PENABLE	: std_logic;
+		signal int_PWRITE   : std_logic;
+		signal int_PWDATA   : std_logic_vector(bus_size-1 downto 0);
+		signal int_PSELx	: std_logic_vector (num_slaves-1 downto 0);
+
+
+
 		signal old_switch_data : std_logic_vector(2 downto 0) := "001";
 --		signal old_switch_data : std_logic_vector(2 downto 0) := "000";
 
@@ -107,6 +116,15 @@ begin
 			end if;
 		end if;	-- reset if
 
+
+		out_PADDR 	<= int_PADDR;
+		out_PENABLE <= int_PENABLE;
+		out_PWRITE  <= int_PWRITE;
+		out_PWDATA  <= int_PWDATA;
+		out_PSELx	<= int_PSELx;
+
+
+		-- Debug stuff
 		if (nstate_m = stm_idle) and not (state_m = stm_idle) then
 			dbg_wait <= dbg_wait_help;
 			dbg_wait_help <= not dbg_wait_help;
@@ -124,33 +142,41 @@ end process SYNC_PROC;
 
 OUTPUT_DECODE: process(state, int_write, in_PREADY, in_PRDATA, int_rst, int_slave_select, int_addr_select, int_data)
 begin
+
+
+	int_PADDR 	<= '0';
+	int_PENABLE <= '0';
+	int_PWRITE  <= '0';
+	int_PWDATA  <= (others=>'0');
+	int_PSELx	<= (others=>'0');
+
 	if int_rst = '0' then
-		out_PADDR 	<= '0';
-		out_PENABLE <= '0';
-		out_PWRITE  <= '0';
-		out_PWDATA  <= (others=>'0');
-		out_PSELx	<= (others=>'0');
+		int_PADDR 	<= '0';
+		int_PENABLE <= '0';
+		int_PWRITE  <= '0';
+		int_PWDATA  <= (others=>'0');
+		int_PSELx	<= (others=>'0');
 	else
 		case state is
 			when sta_idle =>
-				out_PADDR 	<= '0';
-				out_PENABLE <= '0';
-				out_PWRITE  <= '0';
-				out_PWDATA  <= (others=>'0');
-				out_PSELx	<= (others=>'0');
+				int_PADDR 	<= '0';
+				int_PENABLE <= '0';
+				int_PWRITE  <= '0';
+				int_PWDATA  <= (others=>'0');
+				int_PSELx	<= (others=>'0');
 
 			when sta_setup =>
-				out_PSELx   <= int_slave_select;
-				out_PENABLE <= '0';
-				out_PADDR   <= int_addr_select;
-				out_PWDATA  <= int_data;
-				out_PWRITE  <= int_write;
+				int_PSELx   <= int_slave_select;
+				int_PENABLE <= '0';
+				int_PADDR   <= int_addr_select;
+				int_PWDATA  <= int_data;
+				int_PWRITE  <= int_write;
 			when sta_access =>
-				out_PSELx   <= int_slave_select;
-				out_PENABLE <= '1';
-				out_PADDR   <= int_addr_select;
-				out_PWDATA  <= int_data;
-				out_PWRITE  <= int_write;
+				int_PSELx   <= int_slave_select;
+				int_PENABLE <= '1';
+				int_PADDR   <= int_addr_select;
+				int_PWDATA  <= int_data;
+				int_PWRITE  <= int_write;
 				if int_write = '0' then
 					if in_PREADY = '1' then
 						case int_slave_select is  
@@ -211,6 +237,13 @@ end process NEXT_STATE_DECODE;
 
 STATE_M_DECODE: process (int_rst, state_m, state, waitSample, in_PREADY, old_switch_data, int_data, int_rec_data)
 begin
+	-- no latches na naa na nanaaa
+--	int_want_transfer <= '0';
+--	int_slave_select <= "0000";
+--	int_addr_select <= '0';
+--	int_write <= '0';
+--	int_data <= (others=>'0');
+
 	if int_rst = '0' then 
 		int_want_transfer <= '0';
 		int_slave_select <= "0000";

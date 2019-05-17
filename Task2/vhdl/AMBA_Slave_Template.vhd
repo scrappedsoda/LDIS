@@ -41,6 +41,7 @@ enable_read  <= not in_PWRITE and in_PSELx;	-- data is read everytime to be read
 
 out_PREADY <= int_pready; --int_pready_read or int_pready_write;
 
+-- register with the enable sigs as clock
 WRITE: process(in_PRESETn, enable_write)
 begin
 	if in_PRESETn ='1' then
@@ -51,6 +52,7 @@ begin
 	end if;
 end process WRITE;
 
+-- register with the enable sigs as clock
 READ: process(in_PRESETn, enable_read)
 begin
 	if in_PRESETn ='1' then
@@ -77,6 +79,10 @@ begin
 	end if;
 		
 end process SFORWARD;
+
+
+
+
 
 --ASYNC: process (in_PENABLE, in_PCLK, in_PRESETn)
 --begin
