@@ -18,7 +18,7 @@ entity digitherm is
     	num_slaves : natural := 4;
     	bus_size   : natural := 16;
     	clockfreq  : natural := 100_000_000;	-- 100 MHz
-    	samples	: natural := 4
+    	samples	: natural := 1
 	);
 	port (
 		inout_sda : inout std_logic;

@@ -237,7 +237,7 @@ end process NEXT_STATE_DECODE;
 
 STATE_M_DECODE: process (int_rst, state_m, state, waitSample, in_PREADY, old_switch_data, int_data, int_rec_data)
 begin
-	-- no latches na naa na nanaaa
+--	-- no latches na naa na nanaaa
 --	int_want_transfer <= '0';
 --	int_slave_select <= "0000";
 --	int_addr_select <= '0';
@@ -253,7 +253,12 @@ begin
 	else
 		case state_m is
 			when stm_idle =>
-				null;
+				int_want_transfer <= '0';
+				int_slave_select <= "0000";
+				int_addr_select <= '0';
+				int_write <= '0';
+				int_data <= (others=>'0');
+
 			when stm_adt =>
 				if state = sta_idle then
 					int_want_transfer <= '1';
