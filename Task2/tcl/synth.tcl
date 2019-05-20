@@ -1,4 +1,7 @@
-create_project -part xc7a100t -force digitherm
+create_project -part xc7a100t -force amba_digitherm
+
+set reportsDir ./reports
+file mkdir $reportsDir
 
 read_vhdl vhdl/AMBA_digitherm.vhd 
 read_vhdl vhdl/AMBA_CTL.vhd
@@ -13,10 +16,13 @@ read_vhdl vhdl/DSP.vhd
 read_xdc  digitherm.xdc
 
 
-synth_design -top digitherm
+synth_design -top amba_digitherm
 
 opt_design
 place_design
 route_design
 
-write_bitstream -force digitherm.bit
+report_timing_summary -file $reportsDir/post_route_timing_summary.rpt
+report_utilization -file $reportsDir/post_route_utilization.rpt
+
+write_bitstream -force amba_digitherm.bit

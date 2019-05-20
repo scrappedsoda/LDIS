@@ -16,6 +16,13 @@
 *.gz
 *.out
 *.blg
+*.o
+*.vcd
+*.str
+
+
+.Xil
+digitherm.runs
 digitherm.cache
 digitherm.hw
 digitherm.ip_user_files 

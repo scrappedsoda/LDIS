@@ -11,7 +11,7 @@ use ieee.numeric_std.all;
 --------------------------------------------------------------------------------
 -- entity
 --------------------------------------------------------------------------------
-entity digitherm is
+entity amba_digitherm is
 	generic (
 	--	clockfreq : integer := 50_000_000;
 	--	Samples   : integer := 1
@@ -34,12 +34,12 @@ entity digitherm is
 		dbg_wait 	: out std_logic;
 		dbg_ledsize 	: out std_logic_vector(2 downto 0)
 	);
-end digitherm;
+end amba_digitherm;
 
 --------------------------------------------------------------------------------
 -- behavior
 --------------------------------------------------------------------------------
-architecture behaviour of digitherm is
+architecture behaviour of amba_digitherm is
 -- component declarations
 --    constant num_slaves : natural := 4;
 --    constant bus_size   : natural := 16;

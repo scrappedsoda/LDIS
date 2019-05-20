@@ -1,0 +1,84 @@
+[*]
+[*] GTKWave Analyzer v3.3.94 (w)1999-2018 BSI
+[*] Mon May 20 12:32:20 2019
+[*]
+[dumpfile] "/home/glinsi/git/LDIS/Task2/vhdl/amba_digitherm_tb.vcd"
+[dumpfile_mtime] "Mon May 20 12:21:58 2019"
+[dumpfile_size] 3572118
+[savefile] "/home/glinsi/git/LDIS/Task2/vhdl/gtk_save.gtkw"
+[timestart] 0
+[size] 1920 1056
+[pos] -488 -13
+*-33.184509 10065000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] amba_digitherm_tb.
+[treeopen] amba_digitherm_tb.amba_s2.
+[treeopen] amba_digitherm_tb.amba_s3.
+[sst_width] 231
+[signals_width] 245
+[sst_expanded] 1
+[sst_vpaned_height] 301
+@28
+amba_digitherm_tb.amba_m0.in_pclk
+amba_digitherm_tb.amba_m0.in_presetn
+@22
+amba_digitherm_tb.amba_m0.in_prdata[63:0]
+@201
+-
+@200
+-AMBA master
+@28
+amba_digitherm_tb.amba_m0.in_pready
+amba_digitherm_tb.amba_m0.out_penable
+@22
+amba_digitherm_tb.amba_m0.out_pselx[3:0]
+@28
+amba_digitherm_tb.amba_m0.out_pwrite
+amba_digitherm_tb.amba_m0.out_paddr
+@22
+amba_digitherm_tb.amba_m0.out_pwdata[15:0]
+@200
+-
+-Switch
+@28
+amba_digitherm_tb.amba_s4.in_pselx
+amba_digitherm_tb.amba_s4.in_size[2:0]
+@22
+amba_digitherm_tb.amba_s4.out_prdata[15:0]
+@28
+amba_digitherm_tb.amba_s4.out_pready
+@200
+-
+-ADT
+@28
+amba_digitherm_tb.amba_s1.in_pselx
+@22
+amba_digitherm_tb.amba_s1.out_prdata[15:0]
+@28
+amba_digitherm_tb.amba_s1.out_pready
+@200
+-
+-DSP
+@28
+amba_digitherm_tb.amba_s2.in_pselx
+amba_digitherm_tb.amba_s2.in_paddr
+@22
+amba_digitherm_tb.amba_s2.in_pwdata[15:0]
+amba_digitherm_tb.amba_s2.out_prdata[15:0]
+@28
+amba_digitherm_tb.amba_s2.out_pready
+amba_digitherm_tb.amba_s2.out_size_check[2:0]
+@200
+-
+-BCD
+@28
+amba_digitherm_tb.amba_s3.in_pselx
+@22
+amba_digitherm_tb.amba_s3.in_pwdata[15:0]
+amba_digitherm_tb.amba_s3.out_prdata[15:0]
+@28
+amba_digitherm_tb.amba_s3.out_pready
+@22
+amba_digitherm_tb.amba_s3.out_an[7:0]
+amba_digitherm_tb.amba_s3.out_seg[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
