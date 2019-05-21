@@ -18,7 +18,7 @@ entity amba_digitherm is
     	num_slaves : natural := 4;
     	bus_size   : natural := 16;
     	clockfreq  : natural := 100_000_000;	-- 100 MHz
-    	samples	: natural := 1
+    	samples	: natural := 2
 	);
 	port (
 		inout_sda : inout std_logic;
