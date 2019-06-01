@@ -1,0 +1,23 @@
+Copyright notice:
+Contact Information
+This design is created to display the temperature on a Nexys4 DDR Board. It is created with the purpose to get the temperature and to pass the digital integrated circuits labratory at the Technical University Vienna. It utilizes the AMBA APB Bus interface for communication between the separate parts.
+
+Some data for the Nexys 4 DDR board.
+Performance:
+Power consumption
+Ressoruce consumption
+
+Direcotry explanation
+
+
+PRE-REQUISITS
+To use the design you need Vivado version 2017.4 for the synthesis and to program the FPGA-Board. Maybe works with other versions too, but it is only tested with this version. Furthermore to use the simulation you need ghdl and gtkwave installed. 
+
+USAGE
+To instantiate the core you can simply instantiate the AMBA_digitherm.vhd file which lies within the src/ directory. The parameters are as follows: The clockfreqency in Hz and the samplerate which determines the amount of samples per second.
+
+GENERICS
+clockfrequency: The clockfrequency of the board in Hz. Is needed to make the counting right.
+
+
+TODO
