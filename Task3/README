@@ -2,22 +2,45 @@ Copyright notice:
 Contact Information
 This design is created to display the temperature on a Nexys4 DDR Board. It is created with the purpose to get the temperature and to pass the digital integrated circuits labratory at the Technical University Vienna. It utilizes the AMBA APB Bus interface for communication between the separate parts.
 
-Some data for the Nexys 4 DDR board.
-Performance:
-Power consumption
-Ressoruce consumption
+Some data for the design on the Nexys 4 DDR board:
+Power consumption: 105mW
+Ressource consumption from exported from vivado:
++-------------------------+------+-------+-----------+-------+
+|        Site Type        | Used | Fixed | Available | Util% |
++-------------------------+------+-------+-----------+-------+
+| Slice LUTs              | 1025 |     0 |     63400 |  1.62 |
+|   LUT as Logic          | 1025 |     0 |     63400 |  1.62 |
+|   LUT as Memory         |    0 |     0 |     19000 |  0.00 |
+| Slice Registers         | 2660 |     0 |    126800 |  2.10 |
+|   Register as Flip Flop | 2602 |     0 |    126800 |  2.05 |
+|   Register as Latch     |   58 |     0 |    126800 |  0.05 |
+| F7 Muxes                |  259 |     0 |     31700 |  0.82 |
+| F8 Muxes                |  128 |     0 |     15850 |  0.81 |
++-------------------------+------+-------+-----------+-------+
 
-Direcotry explanation
+
+DIRECTORIES
+Within the 
+./bin - you find the generated bitstream
+./doc - latex source for the documentation
+./sim - files needed for the simulation
+./sim/simout - generated .vcd files from the simulation
+./src - the source files
+./synth - needed scripts for the synthesis and the working directory for vivado
+
 
 
 PRE-REQUISITS
 To use the design you need Vivado version 2017.4 for the synthesis and to program the FPGA-Board. Maybe works with other versions too, but it is only tested with this version. Furthermore to use the simulation you need ghdl and gtkwave installed. 
+
+To generate the documentation you also need latex installed and all needed packages.
 
 USAGE
 To instantiate the core you can simply instantiate the AMBA_digitherm.vhd file which lies within the src/ directory. The parameters are as follows: The clockfreqency in Hz and the samplerate which determines the amount of samples per second.
 
 GENERICS
 clockfrequency: The clockfrequency of the board in Hz. Is needed to make the counting right.
+samples: The amount of samples per second.
+num_slaves: The number of slaves in the digitherm design.
+bus_size: The size of the bus lines to and from the slaves.
 
-
-TODO

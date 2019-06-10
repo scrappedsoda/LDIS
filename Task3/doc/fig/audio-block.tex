@@ -1,0 +1,26 @@
+\begin{tikzpicture}[
+	nd/.append style={draw, minimum height=1cm, inner sep=5mm, outer sep=0, align=center},
+	ed/.style={->, >= stealth', shorten >=2pt, shorten <= 2pt},
+]
+
+	\node(input)[nd]{Sampling};
+	\node(dsp)[nd, right=of input]{DSP};
+	\node(output)[nd, right=of dsp]{Output};
+	\node(userinput) at ($ (input)!.5!(dsp) +(0,3.5) $) [nd] {Input};
+
+	\draw[ed,<-] (input.west) -- ++(-1cm,0) node[left]{Sensor};
+%	\draw[ed] (input) -- (dsp);
+%	\draw[ed] (dsp) -- (output);
+	\draw[ed] (output.east) -- ++(1cm,0) node[right]{Actuator};
+
+	\begin{scope}[ultra thick, gray]
+		\draw ($ (input.north west) + (-1cm,1cm) $) coordinate(bus) -- node [above,midway,black] {APB} ($ (output.north east) +(0,1cm) $);
+		\draw (input) -- (input |- bus);
+		\draw (dsp) -- (dsp |- bus);
+		\draw (output) -- (output |- bus);
+		\draw (userinput) -- (userinput |- bus);
+	\end{scope}
+
+	\node (ctrl) at (bus) [nd,anchor=east]{CTRL};
+
+\end{tikzpicture}

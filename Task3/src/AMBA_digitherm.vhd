@@ -13,8 +13,6 @@ use ieee.numeric_std.all;
 --------------------------------------------------------------------------------
 entity digitherm is
 	generic (
-	--	clockfreq : integer := 50_000_000;
-	--	Samples   : integer := 1
     	num_slaves : natural := 4;
     	bus_size   : natural := 16;
     	clockfreq  : natural := 100_000_000;	-- 100 MHz
