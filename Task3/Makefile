@@ -15,7 +15,7 @@ TESTBENCHES = \
 	7seg_tb.vhd \
 	tb_all.vhd
 
-.PHONY: sim synth prog
+.PHONY: sim synth prog doc
 
 sim:
 	cd sim && ghdl -s $(FILES) testbench_utils.vhd testbench_utils_dsp.vhd AMBA_Slave_ADT_stub.vhd 
@@ -53,8 +53,34 @@ clean:
 	rm -f ./synth/usage_statistics_webtalk.*
 	rm -f ./synth/digitherm.bit 
 	rm -f ./sim/work-obj93.cf 
+	rm -f ./sim/{amba_digitherm_tb,dsp_tb,sevseg_tb}
 	rm -rf ./sim/simout
+	rm -rf ./sim/*.o
 	rm -rf ./bin
+	rm -rf ./doc/Digitherm.aux
+	rm -rf ./doc/Digitherm.bbl
+	rm -rf ./doc/Digitherm.bcf
+	rm -rf ./doc/Digitherm.blg
+	rm -rf ./doc/Digitherm.glo
+	rm -rf ./doc/Digitherm.ist
+	rm -rf ./doc/Digitherm.log
+	rm -rf ./doc/Digitherm.out
+	rm -rf ./doc/Digitherm.run.xml
+	rm -rf ./doc/Digitherm.toc
+	rm -rf ./doc/Digitherm.pdf
 	
 doc:
-	cd doc;pdflatex main3.tex;biblatex main3.aux;pdflatex main3.tex;pdflatex main3.tex
+	cd doc;pdflatex Digitherm.tex;biber Digitherm;pdflatex Digitherm.tex;pdflatex Digitherm.tex
+	@echo Cleaning up ...
+	rm -r ./doc/Digitherm.aux
+	rm -r ./doc/Digitherm.bbl
+	rm -r ./doc/Digitherm.bcf
+	rm -r ./doc/Digitherm.blg
+	rm -r ./doc/Digitherm.glo
+	rm -r ./doc/Digitherm.ist
+	rm -r ./doc/Digitherm.log
+	rm -r ./doc/Digitherm.out
+	rm -r ./doc/Digitherm.run.xml
+	rm -r ./doc/Digitherm.toc
+	@echo The documentation is in ./doc/Digitherm.pdf
+
