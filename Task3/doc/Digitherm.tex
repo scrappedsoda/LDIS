@@ -472,7 +472,7 @@ This part lies within the \mbox{\textbf{./src/AMBA_Slave_Switch}} file.
 
 Each of the mentioned parts (except the Switch Polling) above instantiates the real part and an apb\autocite{apb}-interface
 for the bus communication. Each of these standalone parts get explained in the next 
-section in detail. In fig.\ref{fig:system} you have a schematic overview of the system
+section in detail. Within Fig.\ref{fig:system} you can see a schematic overview of the system
 and how the parts are all connected via the apb-interface.
 
 \begin{figure}[H]
@@ -490,6 +490,7 @@ In this section i explain in more detail how everything is implemented. This des
 \subsection{Sampling}
 The sampling part of the design lies within the file \textbf{./src/ADT7420-Sampler.vhd} 
 and instantiates the i2c-interface within \textbf{./src/TWICtl.vhd}.
+\textbf{These two files were taken from the Nexys-4-OOB demo.}
 For the reading of the temperature the onboard I2C-sensor is used. To get the values the
  the IP-core from the \autocite{Nexys-4-OOB} Demo which includes an readout of this sensor
  is used.
@@ -787,7 +788,8 @@ begin
 end process SFORWARD;
 \end{lstlisting}
 
-For every slave a new .vhd file was created with the template above in it and an 
+For every slave a new .vhd file was created with the sceleton-template 
+(see Listing \ref{lst:apb-slv-tmp}) above in it and an 
 instantiation of the component it is the interface to. The ADT slave samples values
 and if the CTRL requests values faster it just gets the old value back. If you write
 to the DSP part, and want to read the new DSP value it holds the bus transmission by 
@@ -802,21 +804,21 @@ everyone.
 \begin{description}
 
 
-\item[simulation 1] In this simulation you can see how the Master requests the Switches more often than he does
+\item[\hyperlink{sim1.1}{Simulation 1}] In this simulation you can see how the Master requests the Switches more often than he does
 with the other parts. This is visible by looking at the in\_pready line. The short sequences are
 those where the switch is polled and the longer are those where the the new value gets polled,
 and sent to the DSP and the output.
 
-\item[simulation 2] In this simulation you see a closer look of one normal transmission. The master
+\item[\hyperlink{sim2.1}{Simulation 2}] In this simulation you see a closer look of one normal transmission. The master
 selects each of the slaves one after another with the out\_pselx respectively the slaves with each 
 of his own in\_pselx wires. And you can also see that a transmission ends with the pready signal. 
 Furthermore you can see that the DSP takes up multiple cycle when you read immediately after you
 write. This is because the DSP blocks the transmission until a new value is computed.
 
-\item[simulation 3] In this simulation you can see the calculation of a new value in the 
+\item[\hyperlink{sim3.1}{Simulation 3}] In this simulation you can see the calculation of a new value in the 
 DSP part. With a given buffer size of 4 it takes up 4 calculations to reach the input value.
 
-\item[simulation 4] In this simulation you can see the multiplexing of the bcd outputs. This
+\item[\hyperlink{sim4.1}{Simulation 4}] In this simulation you can see the multiplexing of the bcd outputs. This
 is visible in the the lines dbg\_an which selects the corresponding anode for one BCD and 
 dbg\_seg which is the data that should be shown on the output.
 \end{description}
@@ -824,28 +826,33 @@ dbg\_seg which is the data that should be shown on the output.
 
 %\includegraphics[angle=90]{./fig/simulation1.pdf}
 
-\includepdf[landscape=true,pages=1,scale=.9,picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
+\includepdf[landscape=true,pages=1,scale=.9,link,linkname=sim1,pagecommand={},picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
 {Simulation 1 to see the working master toggle the switches.}
 ;}]{./fig/simulation1.pdf}
 
 
-\includepdf[landscape=true,pages=1,scale=.9,picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
+\includepdf[landscape=true,pages=1,scale=.9,pagecommand={},picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
 {Simulation 2 which shows one transmission close up.}
-;}]{./fig/simulation2.pdf}
+;},link,linkname=sim2]{./fig/simulation2.pdf}
 
 
-\includepdf[landscape=true,pages=1,scale=.9,picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
+\includepdf[landscape=true,pages=1,scale=.9,pagecommand={},picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
 {Simulation 3 which shows the DSP.}
-;}]{./fig/dsp-sim.pdf}
+;},link,linkname=sim3]{./fig/dsp-sim.pdf}
 
-\includepdf[landscape=true,pages=1,scale=.9,picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
+\includepdf[landscape=true,pages=1,scale=.9,pagecommand={},picturecommand*={\put (\LenToUnit{.05\paperwidth},20) 
 {Simulation 4 which shows the multiplexing of the output.}
-;}]{./fig/sevseg-sim.pdf}
+;},link,linkname=sim4]{./fig/sevseg-sim.pdf}
 
 
 
 
 \section{Characterization}
+Part of the lab was to characterize your design and compare it to other designs. Within 
+table \ref{tab:characterization} are the values which were used for the comparision. This 
+design corresponds to the entry of \textbf{Glinserer Andreas}. Furthermore a visualization
+of the table can be seen within Fig. \ref{fig:characterization}. The other designs are 
+marked with an 'X' and this design with an 'O'. 
 \begin{table}[ht]
     \centering
     \begin{tabular}{l|lll}
@@ -864,7 +871,8 @@ dbg\_seg which is the data that should be shown on the output.
 The value is calculated by summing up the used values in the utilization report
 (section 1. Slice Logic)
 and dividing them
-by the summed up available values.
+by the summed up available values. The relevant snippet from the report can be seen
+in Lst. \ref{lst:utilzation}.
 
 \begin{lstlisting}[caption=Relevant part from the report\_utilization command needed for calculating the hardware utilization.,firstnumber=1,label={lst:utilzation}]
 1. Slice Logic
@@ -905,7 +913,7 @@ by the summed up available values.
     \label{fig:characterization}
 \end{figure}
 
-Here is a comparison before and after AMBA implementation:
+In Tab. \ref{tab:amba-comparison} is a comparison before and after AMBA implementation:
 \begin{table}[H]
     \centering
     \begin{tabular}{l|ll} 

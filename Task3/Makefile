@@ -14,8 +14,18 @@ TESTBENCHES = \
 	DSP-tb.vhd \
 	7seg_tb.vhd \
 	tb_all.vhd
+LINK1 = https://raw.githubusercontent.com/Digilent/Nexys-4-DDR-OOB/master/src/hdl/TempSensorCtl.vhd
+LINK2 = https://raw.githubusercontent.com/Digilent/Nexys-4-DDR-OOB/master/src/hdl/TWICtl.vhd
 
-.PHONY: sim synth prog doc
+.PHONY: sim synth prog doc 
+
+#test:
+#	mkdir -p test
+#	cd test;wget $(LINK1) $(LINK2)
+#	cd test;patch TempSensorCtl.vhd ../patches/sens.patch;patch TWICtl.vhd ../patches/TWI.patch;
+#	mv test/TempSensorCtl.vhd src/ADT7420-Sampler.vhd 
+#	mv test/TWICtl.vhd src/
+#	rmdir test
 
 sim:
 	cd sim && ghdl -s $(FILES) testbench_utils.vhd testbench_utils_dsp.vhd AMBA_Slave_ADT_stub.vhd 
@@ -35,9 +45,17 @@ sim:
 	@#gtkwave sim/amba_digitherm_tb.vcd
 
 synth:
+	mkdir -p test
+	cd test;wget $(LINK1) $(LINK2)
+	cd test;patch TempSensorCtl.vhd ../patches/sens.patch;patch TWICtl.vhd ../patches/TWI.patch;
+	mv test/TempSensorCtl.vhd src/ADT7420-Sampler.vhd 
+	mv test/TWICtl.vhd src/
+	rmdir test
 	cd synth;vivado -mode batch -source synth.tcl
 	mkdir -p ./bin
 	cp ./synth/digitherm.bit ./bin/digitherm.bit
+	rm src/TWICtl.vhd 
+	rm src/ADT7420-Sampler.vhd
 
 prog: 
 	cd synth;vivado -mode batch -source program.tcl
@@ -82,5 +100,6 @@ doc:
 	rm -r ./doc/Digitherm.out
 	rm -r ./doc/Digitherm.run.xml
 	rm -r ./doc/Digitherm.toc
-	@echo The documentation is in ./doc/Digitherm.pdf
+	mv ./doc/Digitherm.pdf ./doc/Digital_Thermometer.pdf
+	@echo The documentation is in ./doc/Digital_Thermometer.pdf
 

@@ -1,0 +1,607 @@
+--- TempSensorCtl.vhd	2019-06-23 16:52:37.380460623 +0200
++++ ADT7420-Sampler.vhd	2019-06-23 16:53:09.403795131 +0200
+@@ -1,122 +1,121 @@
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+--- Author:  Elod Gyorgy
+---          Copyright 2014 Digilent, Inc.
+-----------------------------------------------------------------------------
+--- 
+--- Create Date:    15:26:37 02/17/2014 
+--- Design Name: 
+--- Module Name:	TempSensorCtl - Behavioral 
+--- Project Name: 	Nexys4 User Demo
+--- Target Devices: 
+--- Tool versions: 
+--- Description: 
+---    This module represents the controller for the Nexys4 onboard ADT7420
+---	  temperature sensor. The module uses a Two-Wire Interface controller to
+---	  configure the ADT7420 and read the temperature continuously.
+---
+---
+--- Revision: 
+--- Revision 0.01 - File Created
+--- Additional Comments: 
++-------------------------------------------------------------------------------
++-- ADT7420 Sampler which uses i2c
++-- Author: Nexys 4 DDR Demo
++-- source: https://github.com/Digilent/Nexys-4-DDR-OOB
+ --
+-----------------------------------------------------------------------------------
+-library IEEE;
+-use IEEE.STD_LOGIC_1164.ALL;
+-use IEEE.math_real.all;
+-use IEEE.std_logic_arith.all;
+-
++-- changes made by:
++-- Name  : Glinserer Andreas
++-- MatrNr: 1525864
++-------------------------------------------------------------------------------
++
++library ieee;
++use ieee.std_logic_1164.all;
++use ieee.numeric_std.all;
++use ieee.math_real.all;
++
++-- The Nexys 4 DDR has an ADT7420 via I2C. The slave address
++-- is 0x4B. The THIGH (0x04:0x05) and the TLOW (0x06:0x07)
++-- are the registers with the temp.
++-- a conversion takes typically 240ms
+ 
+--- Use the package defined in the TWICtl.vhd file
++-- use the TWIUtils vhdl
+ use work.TWIUtils.ALL;
+ 
+--- Uncomment the following library declaration if using
+--- arithmetic functions with Signed or Unsigned values
+---use IEEE.NUMERIC_STD.ALL;
+-
+--- Uncomment the following library declaration if instantiating
+--- any Xilinx primitives in this code.
+---library UNISIM;
+---use UNISIM.VComponents.all;
+-
+-entity TempSensorCtl is
+-	Generic (CLOCKFREQ : natural := 100); -- input CLK frequency in MHz
+-	Port (
+-		TMP_SCL : inout STD_LOGIC;
+-		TMP_SDA : inout STD_LOGIC;
+---		TMP_INT : in STD_LOGIC; -- Interrupt line from the ADT7420, not used in this project
+---		TMP_CT : in STD_LOGIC;  -- Critical Temperature interrupt line from ADT7420, not used in this project
+-		
+-		TEMP_O : out STD_LOGIC_VECTOR(12 downto 0); --12-bit two's complement temperature with sign bit
+-		RDY_O : out STD_LOGIC;	--'1' when there is a valid temperature reading on TEMP_O
+-		ERR_O : out STD_LOGIC; --'1' if communication error
+-		
+-		CLK_I : in STD_LOGIC;
+-		SRST_I : in STD_LOGIC
+-	);
+-end TempSensorCtl;
++--------------------------------------------------------------------------------
++-- entity
++--------------------------------------------------------------------------------
++entity ADT7420 is
++	Generic (clockfreq : natural := 100;
++		Samples : natural := 4	
++		);
++	port (
++		inout_sda : inout std_logic;
++		inout_scl : inout std_logic;
+ 
+-architecture Behavioral of TempSensorCtl is
++		in_clk  : in std_logic;
++		in_srst : in std_logic;
+ 
+--- TWI Controller component declaration
+-	component TWICtl
+-   generic 
+-   (
+-		CLOCKFREQ : natural := 50;  -- input CLK frequency in MHz
+-		ATTEMPT_SLAVE_UNBLOCK : boolean := false --setting this true will attempt
+-		--to drive a few clock pulses for a slave to allow to finish a previous
+-		--interrupted read transfer, otherwise the bus might remain locked up		
++		out_tmp : out std_logic_vector((16-1) downto 0);
++		out_rdy : out std_logic;
++		out_err : out std_logic;
++		out_led : out std_logic
+ 	);
+-	port (
+-		MSG_I : in STD_LOGIC; --new message
+-		STB_I : in STD_LOGIC; --strobe
+-		A_I : in  STD_LOGIC_VECTOR (7 downto 0); --address input bus
+-		D_I : in  STD_LOGIC_VECTOR (7 downto 0); --data input bus
+-		D_O : out  STD_LOGIC_VECTOR (7 downto 0); --data output bus
+-		DONE_O : out  STD_LOGIC; --done status signal
+-      ERR_O : out  STD_LOGIC; --error status
+-		ERRTYPE_O : out error_type; --error type
+-		CLK : in std_logic;
+-		SRST : in std_logic;
+-----------------------------------------------------------------------------------
+--- TWI bus signals
+-----------------------------------------------------------------------------------
+-		SDA : inout std_logic; --TWI SDA
+-		SCL : inout std_logic --TWI SCL
+-	);
+-end component;
++end ADT7420;
++
++--------------------------------------------------------------------------------
++-- behavior
++--------------------------------------------------------------------------------
++architecture behaviour of ADT7420 is
++	component TWICtl 
++	generic  
++	( 
++		CLOCKFREQ : natural := 50;  -- input CLK frequency in MHz 
++		ATTEMPT_SLAVE_UNBLOCK : boolean := false --setting this true will attempt 
++		--to drive a few clock pulses for a slave to allow to finish a previous 
++		--interrupted read transfer, otherwise the bus might remain locked up        
++	); 
++	port ( 
++		MSG_I : in STD_LOGIC; --new message 
++		STB_I : in STD_LOGIC; --strobe 
++		A_I : in  STD_LOGIC_VECTOR (7 downto 0); --address input bus 
++		D_I : in  STD_LOGIC_VECTOR (7 downto 0); --data input bus 
++		D_O : out  STD_LOGIC_VECTOR (7 downto 0); --data output bus 
++		DONE_O : out  STD_LOGIC; --done status signal 
++		ERR_O : out  STD_LOGIC; --error status 
++		ERRTYPE_O : out error_type; --error type 
++		CLK : in std_logic; 
++		SRST : in std_logic; 
++		----------------------------------------------------------------------------- 
++--		TWI bus signals 
++		----------------------------------------------------------------------------- 
++		SDA : inout std_logic; --TWI SDA 
++		SCL : inout std_logic --TWI SCL 
++	); 
++	end component;
+ 
+ ----------------------------------------------------------------------------------
+ -- Definitions for the I2C initialization vector
++-- All copied from the original demo
+ ----------------------------------------------------------------------------------
++
+ 	constant IRD : std_logic := '1'; -- init read
+ 	constant IWR : std_logic := '0'; -- init write
+-	
+-	constant ADT7420_ADDR : std_logic_vector(7 downto 1)     := "1001011"; -- TWI Slave Address
+-	constant ADT7420_RID : std_logic_vector(7 downto 0)      := x"0B"; -- ID Register Address for the ADT7420
+-	constant ADT7420_RRESET : std_logic_vector(7 downto 0)   := x"2F"; -- Software Reset Register
+-	constant ADT7420_RTEMP : std_logic_vector(7 downto 0)    := x"00"; -- Temperature Read MSB Address
+-	constant ADT7420_ID : std_logic_vector(7 downto 0)       := x"CB"; -- ADT7420 Manufacturer ID
+-	
++
++	-- Slave Address
++	constant ADT7420_ADDR : std_logic_vector(7 downto 1)   := "1001011"; 
++	-- ID Address for ADT7420
++	constant ADT7420_RID : std_logic_vector(7 downto 0)    := x"0B"; 
++	-- Software Reset Register
++	constant ADT7420_RRESET : std_logic_vector(7 downto 0) := x"2F"; 
++	-- Temperature Read MSB Address
++	constant ADT7420_RTEMP : std_logic_vector(7 downto 0)  := x"00"; 
++	-- ADT7420 Manufacturer ID
++	constant ADT7420_ID : std_logic_vector(7 downto 0)     := x"CB"; 
++
++--	natural(clockfreq/1_000_000)
++
+ 	constant DELAY : NATURAL := 1; --ms
+-	constant DELAY_CYCLES : NATURAL := natural(ceil(real(DELAY*1000*CLOCKFREQ)));
++	constant DELAY_CYCLES : NATURAL := natural(ceil(real(DELAY*1000*clockfreq)));
+ 	constant RETRY_COUNT : NATURAL := 10;
+ 
+-   -- State MAchine states definition
+-   type state_type is (
+-                        stIdle, -- Idle State
+-                        stInitReg,  -- Send register address from the init vector
+-                        stInitData, -- Send data byte from the init vector
+-                        stRetry,    -- Retry state reached when there is a bus error, will retry RETRY_COUNT times
+-                        stReadTempR,  -- Send temperature register address
+-                        stReadTempD1, -- Read temperature MSB
+-                        stReadTempD2, -- Read temperature LSB
+-                        stError -- Error state when reached when there is a bus error after a successful init; stays here until reset
+-                        ); 
+-   signal state, nstate : state_type; 
++	constant SAMPLECNT : NATURAL := natural(ceil(real(clockfreq*1_000_000/Samples)));
+ 
+-	
+-   constant NO_OF_INIT_VECTORS : natural := 3; -- number of init vectors in TempSensInitMap
++	-- State Machine states definition
++	type state_type is (
++		stIdle, -- Idle State
++		stInitReg,  -- Send register address from the init vector
++		stInitData, -- Send data byte from the init vector
++		stRetry,    -- Retry state reached when there is a bus error, will retry RETRY_COUNT times
++		stReadTempR,  -- Send temperature register address
++		stReadTempD1, -- Read temperature MSB
++		stReadTempD2, -- Read temperature LSB
++		stError, -- Error state when reached when there is a bus error after a successful init; stays here until reset
++		stWait  -- State to wait for the next sample
++	);
++	signal state, nstate : state_type;
++
++
++	constant NO_OF_INIT_VECTORS : natural := 4; -- number of init vectors in TempSensInitMap
+ 	constant DATA_WIDTH : integer := 1 + 8 + 8; -- RD/WR bit + 1 byte register address + 1 byte data
+ 	constant ADDR_WIDTH : natural := natural(ceil(log(real(NO_OF_INIT_VECTORS), 2.0)));
+ 	
+@@ -124,8 +123,12 @@
+ 	signal TempSensInitMap: TempSensInitMap_type := (
+ 		IRD & x"0B" & x"CB", -- Read ID R[0x0B]=0xCB
+ 		IWR & x"2F" & x"00", -- Reset R[0x2F]=don't care
+-		IRD & x"0B" & x"CB" -- Read ID R[0x0B]=0xCB
+-		);	
++		IRD & x"0B" & x"CB", -- Read ID R[0x0B]=0xCB
++		IWR & x"03" & x"80"  -- configure it for 16bit
++	);
++
++	-- 0x03 is the adress for the init
++	-- the value for 16 bit is 0x80
+ 	
+ 	signal initWord: std_logic_vector (DATA_WIDTH-1 downto 0);
+ 	signal initA : natural range 0 to NO_OF_INIT_VECTORS := 0; --init vector index
+@@ -134,28 +137,33 @@
+ 	--Two-Wire Controller signals
+ 	signal twiMsg, twiStb, twiDone, twiErr : std_logic;
+ 	signal twiDi, twiDo, twiAddr : std_logic_vector(7 downto 0);
+-
++	
+ 	--Wait counter used between retry attempts
+ 	signal waitCnt : natural range 0 to DELAY_CYCLES := DELAY_CYCLES;
+ 	signal waitCntEn : std_logic;
+-   
++
++
+ 	--Retry counter to count down attempts to get rid of a bus error
+ 	signal retryCnt : natural range 0 to RETRY_COUNT := RETRY_COUNT;
+-	signal retryCntEn : std_logic;	
++	signal retryCntEn : std_logic;
+ 	-- Temporary register to store received data
+ 	signal tempReg : std_logic_vector(15 downto 0) := (others => '0');
+ 	-- Flag indicating that a new temperature data is available
+-   signal fReady : boolean := false;
++	signal fReady : boolean := false;
++
++	signal waitSample : natural range 0 to SAMPLECNT := 0;
++	signal led_helper : std_logic := '0';
++
+ begin
+ 
+ ----------------------------------------------------------------------------------
+ -- Outputs
+ ----------------------------------------------------------------------------------
+-TEMP_O <= tempReg(15 downto 3);
++out_tmp <= tempReg(15 downto 0);
+ 
+-RDY_O <= '1' when fReady else
++out_rdy <= '1' when fReady else
+ 			'0';
+-ERR_O <= '1' when state = stError else
++out_err <= '1' when state = stError else
+ 			'0';
+ 
+ ----------------------------------------------------------------------------------
+@@ -164,7 +172,7 @@
+ Inst_TWICtl : TWICtl
+ 	generic map (
+ 		ATTEMPT_SLAVE_UNBLOCK => true,
+-		CLOCKFREQ => 100
++		CLOCKFREQ => clockfreq
+ 	)
+ 	port map (
+ 		MSG_I => twiMsg,
+@@ -173,12 +181,12 @@
+ 		D_I => twiDi,
+ 		D_O => twiDo,
+ 		DONE_O => twiDone,
+-      ERR_O => twiErr,
++		ERR_O => twiErr,
+ 		ERRTYPE_O => open,
+-		CLK => CLK_I,
+-		SRST => SRST_I,
+-		SDA => TMP_SDA,
+-		SCL => TMP_SCL
++		CLK => in_clk,
++		SRST => in_srst,
++		SDA => inout_sda, --TMP_SDA,
++		SCL => inout_scl --TMP_SCL
+ 	);
+ 
+ ----------------------------------------------------------------------------------
+@@ -186,9 +194,9 @@
+ ----------------------------------------------------------------------------------
+ 	initWord <= TempSensInitMap(initA);
+ 
+-	InitA_CNT: process (CLK_I) 
++	InitA_CNT: process (in_clk) 
+ 	begin
+-		if Rising_Edge(CLK_I) then
++		if Rising_Edge(in_clk) then
+ 			if (state = stIdle or initA = NO_OF_INIT_VECTORS) then
+ 				initA <= 0;
+ 			elsif (initEn = '1') then
+@@ -200,9 +208,9 @@
+ ----------------------------------------------------------------------------------
+ -- Delay and Retry Counters
+ ----------------------------------------------------------------------------------	
+-	Wait_CNT: process (CLK_I) 
++	Wait_CNT: process (in_clk) 
+ 	begin
+-		if Rising_Edge(CLK_I) then
++		if Rising_Edge(in_clk) then
+ 			if (waitCntEn = '0') then
+ 				waitCnt <= DELAY_CYCLES;
+ 			else
+@@ -211,9 +219,9 @@
+ 		end if;
+ 	end process;
+ 	
+-	Retry_CNT: process (CLK_I) 
++	Retry_CNT: process (in_clk) 
+ 	begin
+-		if Rising_Edge(CLK_I) then
++		if Rising_Edge(in_clk) then
+ 			if (state = stIdle) then
+ 				retryCnt <= RETRY_COUNT;
+ 			elsif (retryCntEn = '1') then
+@@ -225,10 +233,10 @@
+ ----------------------------------------------------------------------------------
+ -- Temperature Registers
+ ----------------------------------------------------------------------------------	
+-	TemperatureReg: process (CLK_I) 
++	TemperatureReg: process (in_clk) 
+ 	variable temp : std_logic_vector(7 downto 0);
+ 	begin
+-		if Rising_Edge(CLK_I) then
++		if Rising_Edge(in_clk) then
+ 			--MSB
+ 			if (state = stReadTempD1 and twiDone = '1' and twiErr = '0') then
+ 				temp := twiDo;
+@@ -243,33 +251,54 @@
+ ----------------------------------------------------------------------------------
+ -- Ready Flag
+ ----------------------------------------------------------------------------------	
+-	ReadyFlag: process (CLK_I) 
++	ReadyFlag: process (in_clk) 
+ 	begin
+-		if Rising_Edge(CLK_I) then
+-			if (state = stIdle or state = stError) then
++		if Rising_Edge(in_clk) then
++			if (state = stIdle or state = stError) or state = stWait then
+ 				fReady <= false;
+ 			elsif (state = stReadTempD2 and twiDone = '1' and twiErr = '0') then
+ 				fReady <= true;
+ 			end if;
+ 		end if;
+ 	end process;	
++
++----------------------------------------------------------------------------------
++-- Sample counter wait
++----------------------------------------------------------------------------------	
++	SAMPLEWAIT : process(in_clk)
++	begin
++		if rising_edge(in_clk) then
++			if state = stWait then
++				if waitSample = SAMPLECNT then
++					out_led <= led_helper;
++					led_helper <= not led_helper;
++				else
++					waitSample <= waitSample+1;
++				end if;
++
++			else
++				waitSample <= 0;
++			end if;
++		end if;
++	end process;
++
+ 	
+ ----------------------------------------------------------------------------------
+ -- Initialization FSM & Continuous temperature read
+ ----------------------------------------------------------------------------------	
+-   SYNC_PROC: process (CLK_I)
+-   begin
+-      if (CLK_I'event and CLK_I = '1') then
+-         if (SRST_I = '1') then
+-            state <= stIdle;
+-         else
+-            state <= nstate;
+-         end if;        
+-      end if;
+-   end process;
++	SYNC_PROC: process (in_clk)
++	begin
++		if (in_clk'event and in_clk = '1') then
++			if (in_srst = '1') then
++				state <= stIdle;
++			else
++				state <= nstate;
++			end if;        
++		end if;
++	end process;
+  
+-   OUTPUT_DECODE: process (state, initWord, twiDone, twiErr, twiDo, retryCnt, waitCnt, initA)
+-   begin
++	OUTPUT_DECODE: process (state, initWord, twiDone, twiErr, twiDo, retryCnt, waitCnt, initA)
++	begin
+ 		twiStb <= '0'; --byte send/receive strobe
+ 		twiMsg <= '0'; --new transfer request (repeated start)
+ 		waitCntEn <= '0'; --wait countdown enable
+@@ -279,15 +308,15 @@
+ 		retryCntEn <= '0'; --retry countdown enable
+ 		
+ 		case (state) is
+-         when stIdle =>
++			when stIdle =>
+ 			
+-         when stInitReg => --this state sends the register address from the current init vector
+-            twiStb <= '1';
++			when stInitReg => --this state sends the register address from the current init vector
++				twiStb <= '1';
+ 				twiMsg <= '1';
+ 				twiAddr(0) <= IWR; --Register address is a write
+ 				twiDi <= initWord(15 downto 8);
+ 			when stInitData => --this state sends the data byte from the current init vector
+-            twiStb <= '1';
++				twiStb <= '1';
+ 				twiAddr(0) <= initWord(initWord'high); --could be read or write
+ 				twiDi <= initWord(7 downto 0);
+ 				if (twiDone = '1' and
+@@ -312,86 +341,93 @@
+ 				twiStb <= '1';
+ 				twiAddr(0) <= IRD;
+ 			when stReadTempD2 => --this state reads the temperature LSB
+-            twiStb <= '1';
++				twiStb <= '1';
+ 				twiAddr(0) <= IRD;
+ 				
+ 			when stError => --in case of an I2C error during temperature poll
+ 				null; --stay here
++			when stWait =>
++				null;
+ 		end case;
+ 			
+-   end process;
++	end process;
+  
+-   NEXT_STATE_DECODE: process (state, twiDone, twiErr, initWord, twiDo, retryCnt, waitCnt)
+-   begin
+-      --declare default state for nstate to avoid latches
+-      nstate <= state;  --default is to stay in current state
+-
+-      case (state) is
+-         when stIdle =>
+-            nstate <= stInitReg;
+-				
+-         when stInitReg =>
+-            if (twiDone = '1') then
+-					if (twiErr = '1') then
+-						nstate <= stRetry;
+-					else
+-						nstate <= stInitData;
+-					end if;
++	NEXT_STATE_DECODE: process (state, twiDone, twiErr, initWord, twiDo, retryCnt, waitCnt, waitSample)
++	begin
++	--declare default state for nstate to avoid latches
++	nstate <= state;  --default is to stay in current state
++
++	case (state) is
++		when stIdle =>
++			nstate <= stInitReg;
++
++		when stInitReg =>
++			if (twiDone = '1') then
++				if (twiErr = '1') then
++					nstate <= stRetry;
++				else
++					nstate <= stInitData;
+ 				end if;
+-				
+-			when stInitData =>
+-            if (twiDone = '1') then
+-					if (twiErr = '1') then
++			end if;
++
++		when stInitData =>
++			if (twiDone = '1') then
++				if (twiErr = '1') then
++					nstate <= stRetry;
++				else
++					if (initWord(initWord'high) = IRD and twiDo /= initWord(7 downto 0)) then
+ 						nstate <= stRetry;
++					elsif (initA = NO_OF_INIT_VECTORS-1) then
++						nstate <= stReadTempR;
+ 					else
+-						if (initWord(initWord'high) = IRD and twiDo /= initWord(7 downto 0)) then
+-							nstate <= stRetry;
+-						elsif (initA = NO_OF_INIT_VECTORS-1) then
+-							nstate <= stReadTempR;
+-						else
+-							nstate <= stInitReg;
+-						end if;
++						nstate <= stInitReg;
+ 					end if;
+-				end if;				
+-			when stRetry =>
+-				if (retryCnt = 0) then
+-					nstate <= stError;
+-				elsif (waitCnt = 0) then
+-					nstate <= stInitReg; --new retry attempt
+ 				end if;
+-				
+-			when stReadTempR =>
+-            if (twiDone = '1') then
+-					if (twiErr = '1') then
+-						nstate <= stError;
+-					else
+-						nstate <= stReadTempD1;
+-					end if;
++			end if;				
++		when stRetry =>
++			if (retryCnt = 0) then
++				nstate <= stError;
++			elsif (waitCnt = 0) then
++				nstate <= stInitReg; --new retry attempt
++			end if;
++
++		when stReadTempR =>
++			if (twiDone = '1') then
++				if (twiErr = '1') then
++					nstate <= stError;
++				else
++					nstate <= stReadTempD1;
+ 				end if;
+-			when stReadTempD1 =>
+-            if (twiDone = '1') then
+-					if (twiErr = '1') then
+-						nstate <= stError;
+-					else
+-						nstate <= stReadTempD2;
+-					end if;
++			end if;
++		when stReadTempD1 =>
++			if (twiDone = '1') then
++				if (twiErr = '1') then
++					nstate <= stError;
++				else
++					nstate <= stReadTempD2;
+ 				end if;
+-			when stReadTempD2 =>
+-            if (twiDone = '1') then
+-					if (twiErr = '1') then
+-						nstate <= stError;
+-					else
+-						nstate <= stReadTempR;
+-					end if;
++			end if;
++		when stReadTempD2 =>
++			if (twiDone = '1') then
++				if (twiErr = '1') then
++					nstate <= stError;
++				else
++					nstate <= stWait;
++--					nstate <= stReadTempR; -- old version
+ 				end if;
++			end if;
+ 
+-         when stError =>
+-				null; --stay
+-				
+-         when others =>
+-            nstate <= stIdle;
+-      end case;      
+-   end process;
++		when stWait =>
++			if waitSample = SAMPLECNT then
++				nstate <= stReadTempR;
++			end if;
+ 
+-end Behavioral;
++		when stError =>
++			null; --stay
++
++		when others =>
++			nstate <= stIdle;
++	end case;      
++	end process;
+ 
++end behaviour;
