@@ -85,7 +85,7 @@ clean:
 	rm -rf ./doc/Digitherm.out
 	rm -rf ./doc/Digitherm.run.xml
 	rm -rf ./doc/Digitherm.toc
-	rm -rf ./doc/Digitherm.pdf
+	rm -rf ./doc/Digital_Thermometer.pdf
 	
 doc:
 	cd doc;pdflatex Digitherm.tex;biber Digitherm;pdflatex Digitherm.tex;pdflatex Digitherm.tex

@@ -1,0 +1,4 @@
+This is the repository for the LDIS Lab.
+Task1 - Here is the first design. Just a thermometer.
+Task2 - Everything now communicates via AMBA APB.
+Task3 - Put everything into a nice package and with a Makefile.
